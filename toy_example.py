@@ -83,6 +83,7 @@ noisy_distance = np.maximum(ground_truth_distance+noise,0)
 
 
 
+# 2 - Generate graph
 
 
 src_partition = []
@@ -106,7 +107,6 @@ while len(src_partition) == 0:
     t0_graph = time()
     # time graph construction.
     
-    # 2 - Generate graph
 
     ## 2.a - Create Graph and add Vertices
     
