@@ -71,8 +71,8 @@ ground_truth_distance = ni.morphology.distance_transform_edt(np.invert(ground_tr
 
 np.random.seed(555)
 noise_amplitude = 1
-noise = np.random.randint(-noise_amplitude,noise_amplitude+1,shape)
-noise = np.random.randn(shape[0],shape[1])*noise_amplitude
+#~ noise = np.random.randint(-noise_amplitude,noise_amplitude+1,shape) # Uniformly distributed noise in [-noise_amplitude, noise_amplitude]
+noise = np.random.randn(shape[0],shape[1])*noise_amplitude # Gaussian noise ~ N(0,noise_amplitude)
 
 noisy_distance = np.maximum(ground_truth_distance+noise,0)
 
