@@ -229,10 +229,10 @@ if PLOT_3D:
     plt.show()
     
     
-import pylab as pl
+import matplotlib.pyplot as plt
 
-pl.figure()
-pl.ion()
+plt.figure()
+plt.ion()
 im = np.sum(np.invert(g.get_grid_segments(nodeids)),axis=2)-1
 #pl.subplot(1,2,1)
 #pl.imshow(noisy_distance,interpolation='nearest')
@@ -240,17 +240,17 @@ im = np.sum(np.invert(g.get_grid_segments(nodeids)),axis=2)-1
 H = np.shape(im)[0]
 spacer = np.zeros((H,3))
 IM = np.concatenate((ground_truth_distance, spacer, noisy_distance, spacer, im), axis=1)
-pl.imshow(IM,interpolation='nearest')
-pl.title('True Distance   -    Distance with Noise   -   Result')
+plt.imshow(IM,interpolation='nearest')
+plt.title('True Distance   -    Distance with Noise   -   Result')
 #    pl.colorbar()
-pl.show()
+plt.show()
 
-pl.figure()
-pl.hold(True)
-pl.plot(ground_truth_distance[half_width,:],'g')
-pl.plot(noisy_distance[half_width,:],'r')
-pl.plot(im[half_width,:],'b')
-pl.legend(['Ground truth','Noisy distance','Result'])
-pl.show()
-pl.ioff()
+plt.figure()
+plt.hold(True)
+plt.plot(ground_truth_distance[half_width,:],'g')
+plt.plot(noisy_distance[half_width,:],'r')
+plt.plot(im[half_width,:],'b')
+plt.legend(['Ground truth','Noisy distance','Result'])
+plt.show()
+plt.ioff()
 print "Done"
