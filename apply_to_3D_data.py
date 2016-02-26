@@ -284,8 +284,8 @@ plt.figure()
 plt.hold(True)
 plt.plot(ground_truth_distance[ROW,:,SLICE],'g',lw=3)
 plt.plot(noisy_distance[ROW,:,SLICE],'r',lw=2)
-plt.plot(im[ROW,:,SLICE],'b')
-plt.xlim([0,np.shape(im)[1]])
+plt.plot(reg_dist[ROW,:,SLICE],'b')
+plt.xlim([0,np.shape(reg_dist)[1]])
 plt.legend(['Ground truth','Noisy distance','Result'])
 plt.show()
 
@@ -301,7 +301,7 @@ import matplotlib as mpl
 
 plt.figure()
 
-results = im.flatten()
+results = reg_dist.flatten()
 labels = ground_truth_distance.flatten()
 
 num_of_examples = results.shape[0]
@@ -328,5 +328,5 @@ plt.ylabel('prediction')
 plt.title('2d histogram of regularized distance')
 plt.show()
 
-pl.ioff()
+plt.ioff()
 print "Done"
