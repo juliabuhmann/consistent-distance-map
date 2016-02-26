@@ -18,7 +18,6 @@ print "Total python variables memory footprint before everything:",
 ### Imports
 import numpy as np
 import maxflow
-from scipy import ndimage as ni
 import h5py
 import os
 from time import time
@@ -91,10 +90,10 @@ slices = [slice(None), slice(None), slice(21,24)]
 f = h5py.File(inputfilename, 'r')
 # Load data
 
-noisy_distance = f['inference_results'].value[:,:,21:24]
+noisy_distance = f['inference_results'].value[slices[0],slices[1],slices[2]]
 # Inferred distances
 
-ground_truth_distance = f['labels'].value[:,:,21:24]
+ground_truth_distance = f['labels'].value[slices[0],slices[1],slices[2]]
 # Ground truth
 
 shape = list(np.shape(noisy_distance))
@@ -161,11 +160,20 @@ while len(src_partition) == 0:
     print "Adding internal edges to graph..."
     
     
-    structure = np.zeros((3,3,3,3))
-    structure[:,:,:,0] = [[[0, 0, 0],[0, 1, 0],[0, 0, 0]],
-                          [[0, 1, 0],[1, 1, 1],[0, 1, 0]],
+    #~ structure = np.zeros((3,3,3,3))
+    #~ structure[:,:,:,0] = [[[0, 0, 0],[0, 1, 0],[0, 0, 0]],
+                          #~ [[0, 1, 0],[1, 1, 1],[0, 1, 0]],
+                          #~ [[0, 0, 0],[0, 1, 0],[0, 0, 0]]]
+    # Above structure is isotropic with max gradient being +-1
+    structure = np.zeros((3,3,3,5))
+    structure[:,:,:,1] = [[[0, 0, 0],[0, 1, 0],[0, 0, 0]],
+                          [[0, 1, 0],[0, 1, 0],[0, 1, 0]],
                           [[0, 0, 0],[0, 1, 0],[0, 0, 0]]]
-    # Structure of edges around each node.
+    structure[:,:,:,0] = [[[0, 0, 0],[0, 0, 0],[0, 0, 0]],
+                          [[0, 0, 0],[1, 0, 1],[0, 0, 0]],
+                          [[0, 0, 0],[0, 0, 0],[0, 0, 0]]]
+    # Anisotropic structure with max gradient being +-2 in Z
+    ## Structure of edges around each node.
     
                           
     weights = np.ones(augmented_shape)*MAX
@@ -311,7 +319,7 @@ print np.median(np.abs(labels - results)), 'median'
 plt.hist2d(labels, results, (15, 15), cmap=plt.cm.jet, norm=mpl.colors.LogNorm())
 plt.xlabel('ground truth')
 plt.ylabel('prediction')
-plt.title('2d histogram of predicted distance')
+plt.title('2d histogram of regularized distance')
 plt.show()
 
 plt.figure()
@@ -325,7 +333,7 @@ print np.median(np.abs(labels - results)), 'median'
 plt.hist2d(labels, results, (15, 15), cmap=plt.cm.jet, norm=mpl.colors.LogNorm())
 plt.xlabel('ground truth')
 plt.ylabel('prediction')
-plt.title('2d histogram of regularized distance')
+plt.title('2d histogram of predicted distance')
 plt.show()
 
 plt.ioff()
