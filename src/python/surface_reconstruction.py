@@ -82,8 +82,6 @@ def prepare_problem(distance_map, path_output, max_dist=None, sampling=None, ove
 
     with open(path_output,'wb') as f_out:
         
-        
-            
         if sampling == None: # If not defined, assume isotropic sampling.
             sampling = [1 for _ in range(len(shape)+1)]
             
@@ -153,7 +151,7 @@ def prepare_problem(distance_map, path_output, max_dist=None, sampling=None, ove
         slice_ = [slice(None) for _ in range(len(distance_map.shape))] + [np.newaxis]
 
         if hasattr(cost_fun, '__call__'): # Is a function handle
-            weights = cost_fun(distance_map)
+            weights = cost_fun(distance_map, augmented_shape)
             
         elif cost_fun == 0 or (isinstance(cost_fun,str) and cost_fun.lower() in ['lin','linear']):
             weights = np.abs(np.ones(augmented_shape)*range(column_height) - distance_map[slice_]) # Linear cost.
@@ -169,8 +167,7 @@ def prepare_problem(distance_map, path_output, max_dist=None, sampling=None, ove
             weights = np.ones(augmented_shape)*range(column_height) - distance_map[slice_] # Linear cost with upper bound.
             weights[weights<0] = weights[weights<0]*-0.5
             weights = weights*(max_dist-distance_map[slice_]) # Linear cost with upper bound.
-
-
+        
         # Weights between source/sink and nodes are determined based on the cost for selecting a node.
         slice_ = [slice(None) for _ in range(len(shape))] + [slice(0,1)]
         weights_diff = np.concatenate((weights[slice_], np.diff(weights,axis=-1)), axis=-1)

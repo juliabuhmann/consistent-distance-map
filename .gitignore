@@ -1,0 +1,4 @@
+*.swp
+graph_cut
+*.o
+*.pyc

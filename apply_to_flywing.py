@@ -12,9 +12,11 @@ sys.path.append(os.path.join(ROOT_PATH,'src','python'))
 import validate_distance_maps as vdm
 import surface_reconstruction as sr
 
-def my_cost_function( dist_map ):
-    weights = np.abs(np.ones(augmented_shape)*range(column_height) - distance_map[slice_])*(max_dist-distance_map[slice_])
-    return weights
+def my_cost_function( distance_map, augmented_shape ):
+    column_height = augmented_shape[-1]
+    max_dist = column_height-1
+    slice_ = [slice(None) for _ in range(len(distance_map.shape))] + [np.newaxis]
+    return np.abs(np.ones(augmented_shape)*range(int(column_height)) - distance_map[slice_])*distance_map[slice_]
 
 if __name__ == "__main__":
     
@@ -54,7 +56,7 @@ if __name__ == "__main__":
     sizeX = predicted_distances.shape[1]
     sizeY = predicted_distances.shape[0]
     
-    max_dist = np.maximum( np.max(predicted_distances), np.max(true_distances) )
+    max_dist = int(np.maximum( np.max(predicted_distances), np.max(true_distances) ))
     
     # Crop a cube of given edge.
     pos = list(np.random.randint(0,sizeY-square_size,1)) + list(np.random.randint(0,np.maximum(sizeX-square_size,1),1)) 
@@ -64,8 +66,8 @@ if __name__ == "__main__":
     # cost_function = 'linear'
     # cost_function = 'linear_clipped'
     # cost_function = 'weighted'
-    # cost_function = 'weighted_asymmetric'
-    cost_function = my_cost_function
+    cost_function = 'weighted_asymmetric'
+    # cost_function = my_cost_function
     out = sr.reconstruct_surface(predicted_distances[square_slice], tmp_file1,tmp_file2,prog,overwrite=True, max_dist=max_dist, sampling = [1,1], cost_fun=cost_function)
     
     score_pred, T_pred = sr.best_thresh(predicted_distances[square_slice], true_distances[square_slice],max_dist, score_func='L1')
