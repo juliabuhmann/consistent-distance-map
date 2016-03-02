@@ -1,6 +1,3 @@
-# consistent-distance-map
+# RegSeg
 
-Required python packages:
-  - numpy, scipy
-  - matplotlib
-  - PyMaxflow (https://github.com/pmneila/PyMaxflow)
+Some explanations one the Wiki page: https://github.com/abouchar-laurent/RegSeg/wiki
