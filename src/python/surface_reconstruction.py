@@ -8,7 +8,7 @@ from time import time
 import sys
 import resource
 from subprocess import call
-
+import validate_distance_maps as vdm
 
 
 def prepare_problem(distance_map, path_output, max_dist=None, sampling=None, overwrite=False, cost_fun='lin_clipped',clipping_dist=4):
@@ -291,19 +291,28 @@ def score(image, ground_truth, score='L1'):
                 score_ -= rxy*(np.log(rxy/nx)+np.log(rxy/ny))
             
         return score_
+    
+    elif str.lower(score) in ['percentage', 'perc', 'p']:
         
+        return vdm.calculate_perc_of_correct(ground_truth.astype(np.int), image.astype(np.int))*100    
     else:
         
         raise Exception("Not recognized")
    
         
-def best_thresh(image, ground_truth, max_dist, score_func='L1'):
+def best_thresh(image, ground_truth, max_dist=None, score_func='L1'):
+    
+    if max_dist == None:
+        max_dist = int(np.maximum(  np.max(image), np.max(ground_truth) ) )
     
     thresholds = range(max_dist-1)
     
-    scores = [score(image>threshold,ground_truth>0,score_func) for threshold in thresholds]
-        
-    return np.min(scores), thresholds[np.argmin(scores)]
+    scores = [score(image<threshold,ground_truth<1,score_func) for threshold in thresholds]
+    
+    if score_func in ['percentage', 'perc', 'p']:
+        return np.max(scores), thresholds[np.argmax(scores)]
+    else:
+        return np.min(scores), thresholds[np.argmin(scores)]
 
 
 def plot_histogram(values, ground_truth, max_dist):
@@ -313,7 +322,74 @@ def plot_histogram(values, ground_truth, max_dist):
     plt.ylabel('prediction')
     plt.title('2d histogram of distance to membrane results')
     plt.show()
+
+def print_scores(ground_truth, noisy_distance, smoothed_distance):
     
+    #--------------------------------------------------------------------------
+    # Noisy distance scores
+    #--------------------------------------------------------------------------
+    score_pred, T_pred = best_thresh(noisy_distance, ground_truth, score_func='L1')
+    VI_pred, T_pred_VI = best_thresh(noisy_distance, ground_truth, score_func='VI')
+    perc_pred, T_pred_perc = best_thresh(noisy_distance, ground_truth, score_func='percentage')
+    
+    VI_pred_dist = score(noisy_distance, ground_truth,'VI')
+    L1_err_pred = score(noisy_distance, ground_truth,'L1')
+    L2_err_pred = score(noisy_distance, ground_truth,'L2')
+    perc_pred = score(noisy_distance, ground_truth,'percentage')
+    
+    
+    
+
+    print "\n\n\t\t----------------------"
+    print '\033[1m' + "\t\t\tSCORES" + '\033[0m'
+    print "\t\t----------------------\n"
+    print "CNN prediction:\n"
+    print "\t-Segmentation:\n"
+    print "\t    -L1:"
+    print "\t        Best threshold: %d" % T_pred
+    print "\t        Error: %.5f" % score_pred
+    print "\t    -Percentage correct:"
+    print "\t        Best threshold: %d" % T_pred_perc
+    print "\t        %% correct: %.5f" % perc_pred
+    print "\t    -Variation of Information:"
+    print "\t        Best threshold: %d"% T_pred_VI
+    print "\t        Error: %.5f\n" % VI_pred
+    print "\t-Distance map:\n"
+    print "\t    -L1 error: %.3f" % L1_err_pred
+    print "\t    -L2 error: %.1f" % L2_err_pred
+    print "\t    -Percentage correct: %.2f%%" % perc_pred
+    print "\t    -VI score: %.3f\n\n" % VI_pred_dist    
+    
+    
+    
+    
+    score_smoothed, T_smoothed = best_thresh(smoothed_distance, ground_truth, score_func='L1')
+    VI_smoothed, T_smoothed_VI = best_thresh(smoothed_distance, ground_truth, score_func='VI')
+    perc_smoothed, T_smoothed_perc = best_thresh(smoothed_distance, ground_truth, score_func='percentage')
+    
+    VI_smoothed_dist = score(smoothed_distance, ground_truth,'VI')
+    L1_err_smoothed = score(smoothed_distance, ground_truth,'L1')
+    L2_err_smoothed = score(smoothed_distance, ground_truth,'L2')
+    perc_smoothed = score(smoothed_distance, ground_truth,'percentage')
+  
+  
+    print "Smoothed prediction:\n"
+    print "\t-Segmentation:\n"
+    print "\t    -L1:"
+    print "\t        Best threshold: %d" % T_smoothed
+    print "\t        Error: %.5f" % score_smoothed
+    print "\t    -Percentage correct:"
+    print "\t        Best threshold: %d" % T_smoothed_perc
+    print "\t        %% correct: %.5f" % perc_smoothed
+    print "\t    -Variation of Information:"
+    print "\t        Best threshold: %d"% T_smoothed_VI
+    print "\t        Error: %.5f\n" % VI_smoothed
+    print "\t-Distance map:\n"
+    print "\t    -L1 error: %.3f" % L1_err_smoothed
+    print "\t    -L2 error: %.1f" % L2_err_smoothed
+    print "\t    -Percentage correct: %.2f%%" % perc_smoothed
+    print "\t    -VI score: %.3f\n" % VI_smoothed_dist 
+        
     
 def test(image, path_graph, path_output, C_prog, max_dist=None):
     
