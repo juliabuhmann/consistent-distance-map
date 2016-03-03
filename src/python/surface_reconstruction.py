@@ -7,7 +7,7 @@ import os
 from time import time
 import sys
 import resource
-from subprocess import call
+from subprocess import call, STDOUT
 import validate_distance_maps as vdm
 
 
@@ -183,7 +183,7 @@ def prepare_problem(distance_map, path_output, max_dist=None, sampling=None, ove
     return augmented_shape
     
     
-def call_graph_cut(input_file, output_file, prog):
+def call_graph_cut(input_file, output_file, prog, verbose=False):
     '''
     Calls the C implementation to solve the graph-cut problem.
     
@@ -201,7 +201,11 @@ def call_graph_cut(input_file, output_file, prog):
         
     
     '''
-    returned = call([prog, input_file, output_file])
+    if verbose:
+        returned = call([prog, input_file, output_file])
+    else:
+        with open(os.devnull,'w') as FNULL:
+            returned = call([prog, input_file, output_file], stdout=FNULL, stderr=STDOUT)
     
     
 def get_graph_cut_output(output_file, shape):
@@ -241,11 +245,11 @@ def get_graph_cut_output(output_file, shape):
     
     
     
-def reconstruct_surface(image, path_graph, path_output, C_prog, max_dist=None, sampling=None, overwrite=False, clipping_dist=4, cost_fun=None):
+def reconstruct_surface(image, path_graph, path_output, C_prog, max_dist=None, sampling=None, overwrite=False, clipping_dist=4, cost_fun=None, verbose=False):
     
     shape = prepare_problem(image, path_graph, max_dist=max_dist, sampling=sampling, overwrite=overwrite, clipping_dist=clipping_dist, cost_fun=cost_fun)
     
-    call_graph_cut(path_graph, path_output, C_prog)
+    call_graph_cut(path_graph, path_output, C_prog, verbose=verbose)
     
     return get_graph_cut_output(path_output, shape)
     

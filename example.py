@@ -3,6 +3,33 @@ import pylab as pl
 import h5py
 import os
 import sys
+import argparse
+
+
+# -----------------------------------------------------------------------------
+# 0. Define arguments that can be provided.
+# -----------------------------------------------------------------------------
+    
+    
+parser = argparse.ArgumentParser(description='Constrain distance map gradients by using Graph-Cut.')
+parser.add_argument('input', metavar='path_to_input', type=str,
+                   help='The path to the hdf5 file that contains the data.')
+parser.add_argument('temporary_folder', metavar='path_to_a_tmp_folder', type=str, help='Path where to write some temporary data.')
+parser.add_argument('-s','--size', metavar='edge_size', type=int, help='Edge size of the cube to analyze. Defaults to 24.')
+parser.add_argument('--sx', '--sizex', metavar='size_x', type=int, help="Edge size of the cube to analyze along X. Defaults to 'size' if provided, or 24 if not.")
+parser.add_argument('--sy', '--sizey', metavar='size_y', type=int, help="Edge size of the cube to analyze along Y. Defaults to 'size' if provided, or 24 if not.")
+parser.add_argument('--sz', '--sizez', metavar='size_z', type=int, help="Edge size of the cube to analyze along Z. Defaults to 'size' if provided, or 24 if not.")
+parser.add_argument('--px', '--posx', metavar='pos_x', type=int, help="Position where to start cropping cube along X. Picked at random if not provided.")
+parser.add_argument('--py', '--posy', metavar='pos_y', type=int, help="Position where to start cropping cube along Y. Picked at random if not provided.")
+parser.add_argument('--pz', '--posz', metavar='pos_z', type=int, help="Position where to start cropping cube along Z. Picked at random if not provided.")
+parser.add_argument('-v','--verbose', action='store_true', help='Print graph cut procedure details.')
+parser.add_argument('-n','--np','--noplot','--no_plot', action='store_false', help='Do not show plot.')
+parser.add_argument('--ns','--noscores','--no_scores', action='store_false', help='Do not print scores.')
+
+
+
+
+
 
 ROOT_PATH = os.path.dirname(os.path.realpath(__file__))
 
@@ -18,27 +45,30 @@ if __name__ == "__main__":
     # -------------------------------------------------------------------------
     # 0. Parse parameters
     # -------------------------------------------------------------------------
-    CUBE_SIZE = None
+    args = parser.parse_args()
     
-    if len(sys.argv) > 2:
-        inputfilename = sys.argv[1]
-        tmp_files = sys.argv[2]
-    else:
-        raise Exception("Location of .h5 file required as first argument and path to folder where to create temp files as second argument.")
+    inputfilename = args.input
+    tmp_files = args.temporary_folder
     
-    if len(sys.argv) > 3:
-        CUBE_SIZE = int(sys.argv[3])
+    cube_size = args.size if args.size != None else cube_size
+    cube_sizeX = args.sx if args.sx != None else cube_size
+    cube_sizeY = args.sy if args.sy != None else cube_size
+    cube_sizeZ = args.sz if args.sz != None else cube_size
     
-    if len(sys.argv) > 4:
-        PLOTTING = np.bool(int(sys.argv[4]))
-    else:
-        PLOTTING = True
+    posX = args.px
+    posY = args.py
+    posZ = args.pz
+    
+    VERBOSE = args.verbose
+    PLOTTING = args.np
+    PRINTING = args.ns
+    
+    
     
     tmp_file1 = os.path.join(tmp_files,'tmp.txt')
     tmp_file2 = os.path.join(tmp_files,'tmp_output.txt')
     prog = os.path.join(ROOT_PATH,'src','cpp','graph_cut')
     
-    cube_size = 24 if CUBE_SIZE == None else CUBE_SIZE
     
     
     # -------------------------------------------------------------------------
@@ -52,22 +82,27 @@ if __name__ == "__main__":
     
     f.close()
     
+    sx,sy,sz = predicted_distances.shape
     
     max_dist = 15
     
     start = 20
-    
+    np.random.seed(555)
     # Crop a cube of given edge.
-    pos = list(np.random.randint(0,256-cube_size,2)) + list(np.random.randint(0,np.maximum(128-cube_size,1),1)) 
+    px = np.random.randint(0,np.maximum(sx-cube_sizeX,1)) if posX == None else posX
+    py = np.random.randint(0,np.maximum(sy-cube_sizeY,1)) if posY == None else posY
+    pz = np.random.randint(0,np.maximum(sz-cube_sizeZ,1)) if posZ == None else posZ
+    
+    pos = [px,py,pz]
     
     
-    cube_slice = [slice(pos[0],pos[0]+cube_size), slice(pos[1],pos[1]+cube_size),slice(pos[2],pos[2]+cube_size)]
+    cube_slice = [slice(pos[0],pos[0]+cube_sizeX), slice(pos[1],pos[1]+cube_sizeY),slice(pos[2],pos[2]+cube_sizeZ)]
     
-    out = sr.reconstruct_surface(predicted_distances[cube_slice], tmp_file1,tmp_file2,prog,overwrite=True, max_dist=max_dist, sampling = [1,1,2])
+    out = sr.reconstruct_surface(predicted_distances[cube_slice], tmp_file1,tmp_file2,prog,overwrite=True, max_dist=max_dist, sampling = [1,1,2], verbose=VERBOSE)
 
 
-    
-    sr.print_scores(true_distances[cube_slice], predicted_distances[cube_slice], out)
+    if PRINTING:
+        sr.print_scores(true_distances[cube_slice], predicted_distances[cube_slice], out)
     
 
         
@@ -80,7 +115,7 @@ if __name__ == "__main__":
         # Plot 3 slices throughout the cube.
         
         row_length = 3
-        sl = [int(s) for s in np.linspace(0,cube_size,5)[1:-1]]
+        sl = [int(s) for s in np.linspace(0,cube_sizeZ,5)[1:-1]]
         cmap = pl.get_cmap('YlGnBu')
         cmap.set_under([0.7,0.95,0.5])
         fig1 = pl.figure()
@@ -123,7 +158,7 @@ if __name__ == "__main__":
             pl.imshow(np.squeeze(true_distances[slices_cube]), vmin=0.5, vmax=15,interpolation='nearest',cmap=cmap)
             pl.xticks([])
             pl.yticks([])
-        pl.suptitle(str(cube_size) + ' x ' + str(cube_size) + ' slices comparison')
+        pl.suptitle(str(cube_sizeX) + ' x ' + str(cube_sizeY) + ' slices comparison')
             
             
         
