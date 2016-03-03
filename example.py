@@ -11,7 +11,7 @@ sys.path.append(os.path.join(ROOT_PATH,'src','python'))
 
 import validate_distance_maps as vdm
 import surface_reconstruction as sr
-
+reload(sr)
 
 if __name__ == "__main__":
     
@@ -67,65 +67,11 @@ if __name__ == "__main__":
 
 
     
-    
+    sr.print_scores(true_distances[cube_slice], predicted_distances[cube_slice], out)
     
 
         
-    score_pred, T_pred = sr.best_thresh(predicted_distances[cube_slice], true_distances[cube_slice],max_dist, score_func='L1')
-    VI_pred, T_pred_VI = sr.best_thresh(predicted_distances[cube_slice], true_distances[cube_slice],max_dist, score_func='VI')
-    
-    VI_pred_dist = sr.score(predicted_distances[cube_slice], true_distances[cube_slice],'VI')
-    L1_err_pred = sr.score(predicted_distances[cube_slice], true_distances[cube_slice],'L1')
-    L2_err_pred = sr.score(predicted_distances[cube_slice], true_distances[cube_slice],'L2')
-    perc_pred = vdm.calculate_perc_of_correct(true_distances[cube_slice].astype(np.int), predicted_distances[cube_slice].astype(np.int))*100
-    
-    assert L1_err_pred == vdm.calculate_L1(true_distances[cube_slice], predicted_distances[cube_slice])
-    assert L2_err_pred == vdm.calculate_L2(true_distances[cube_slice], predicted_distances[cube_slice])
-    
-    
-    score_smoothed, T_smoothed = sr.best_thresh(out, true_distances[cube_slice],max_dist, score_func='L1')
-    VI_smoothed, T_smoothed_VI = sr.best_thresh(out, true_distances[cube_slice],max_dist, score_func='VI')
-    
-    VI_smoothed_dist = sr.score(out, true_distances[cube_slice],'VI')
-    L1_err_smoothed = sr.score(out, true_distances[cube_slice],'L1')
-    L2_err_smoothed = sr.score(out, true_distances[cube_slice],'L2')
-    perc_smoothed = vdm.calculate_perc_of_correct(true_distances[cube_slice].astype(np.int), out.astype(np.int))*100
-    
-    assert L1_err_smoothed == vdm.calculate_L1(true_distances[cube_slice], out)
-    assert L2_err_smoothed == vdm.calculate_L2(true_distances[cube_slice], out)
-    print L1_err_smoothed,'==', vdm.calculate_L1(true_distances[cube_slice], out)
-    
-    
-    print "\n\n\t\t----------------------"
-    print '\033[1m' + "\t\t\tSCORES" + '\033[0m'
-    print "\t\t----------------------\n"
-    print "CNN prediction:\n"
-    print "\t-Segmentation:\n"
-    print "\t    -L1:"
-    print "\t        Best threshold: %d" % T_pred
-    print "\t        Error: %.5f" % score_pred
-    print "\t    -Variation of Information:"
-    print "\t        Best threshold: %d"% T_pred_VI
-    print "\t        Error: %.5f\n" % VI_pred
-    print "\t-Distance map:\n"
-    print "\t    -L1 error: %.3f" % L1_err_pred
-    print "\t    -L2 error: %.1f" % L2_err_pred
-    print "\t    -Percentage correct: %.2f%%" % perc_pred
-    print "\t    -VI score: %.3f\n\n" % VI_pred_dist
-    
-    print "Smoothed prediction:\n"
-    print "\t-Segmentation:\n"
-    print "\t    -L1:"
-    print "\t        Best threshold: %d" % T_smoothed
-    print "\t        Error: %.5f" % score_smoothed
-    print "\t    -Variation of Information:"
-    print "\t        Best threshold: %d"% T_smoothed_VI
-    print "\t        Error: %.5f\n" % VI_smoothed
-    print "\t-Distance map:\n"
-    print "\t    -L1 error: %.3f" % L1_err_smoothed
-    print "\t    -L2 error: %.1f" % L2_err_smoothed
-    print "\t    -Percentage correct: %.2f%%" % perc_smoothed
-    print "\t    -VI score: %.3f\n" % VI_smoothed_dist
+
         
 
 
@@ -135,17 +81,23 @@ if __name__ == "__main__":
         
         row_length = 3
         sl = [int(s) for s in np.linspace(0,cube_size,5)[1:-1]]
+        cmap = pl.get_cmap('YlGnBu')
+        cmap.set_under([0.7,0.95,0.5])
+        fig1 = pl.figure()
         for i in range(3):
             
             pl.subplot(3,row_length,i*row_length+1)
             
             if i == 0:
-                pl.title('Predicted Distance')
+                pl.title('Noisy Distance')
             if len(np.shape(out)) == 3:
                 slices_cube = cube_slice[:-1] + [pos[2]+sl[i]]
             else:
                 slices_cube = [None,None]
-            pl.imshow(np.transpose(np.squeeze(predicted_distances[slices_cube])), vmin=0, vmax=15,interpolation='nearest')
+            pl.imshow(np.squeeze(predicted_distances[slices_cube]), vmin=0.5, vmax=15,interpolation='nearest',cmap=cmap)
+            pl.xticks([])
+            pl.yticks([])
+            pl.ylabel('Slice ' + str(sl[i]))
             
             pl.subplot(3,row_length,i*row_length+2)
             
@@ -155,7 +107,10 @@ if __name__ == "__main__":
                 slices = [slice(None),slice(None),sl[i]]
             else:
                 slices = [None,None]
-            pl.imshow(np.transpose(np.squeeze(out[slices])), vmin=0, vmax=15,interpolation='nearest')
+            pl.imshow(np.squeeze(out[slices]), vmin=0.5, vmax=15,interpolation='nearest',cmap=cmap)
+            pl.xticks([])
+            pl.yticks([])
+            
             
             pl.subplot(3,row_length,i*row_length+3)
             
@@ -165,8 +120,12 @@ if __name__ == "__main__":
                 slices_cube = cube_slice[:-1] + [pos[2]+sl[i]]
             else:
                 slices_cube = [None,None]
-            pl.imshow(np.transpose(np.squeeze(true_distances[slices_cube])), vmin=0, vmax=15,interpolation='nearest')
-            max_dist+1, max_dist+1
+            pl.imshow(np.squeeze(true_distances[slices_cube]), vmin=0.5, vmax=15,interpolation='nearest',cmap=cmap)
+            pl.xticks([])
+            pl.yticks([])
+        pl.suptitle(str(cube_size) + ' x ' + str(cube_size) + ' slices comparison')
+            
+            
         
         
         
