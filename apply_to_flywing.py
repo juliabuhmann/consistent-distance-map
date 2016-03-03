@@ -23,20 +23,24 @@ if __name__ == "__main__":
     # -------------------------------------------------------------------------
     # 0. Parse parameters
     # -------------------------------------------------------------------------
-    SQUARE_SIZE = None
+    SQUARE_SIZE_X = None
     
     if len(sys.argv) > 3:
         fnPredictedDists = sys.argv[1]
         fnTrueDists = sys.argv[2]
         tmp_files = sys.argv[3]
     else:
-        raise Exception("Location of .h5 file required as first argument and path to folder where to create temp files as second argument.")
+        raise Exception("Location of TIFF file required as first argument and path to folder where to create temp files as second argument.")
     
     if len(sys.argv) > 4:
-        SQUARE_SIZE = int(sys.argv[4])
+        SQUARE_SIZE_X = int(sys.argv[4])
+        if len(sys.argv) > 5:
+            SQUARE_SIZE_Y = int(sys.argv[5])
+        else:
+            SQUARE_SIZE_Y = SQUARE_SIZE_X
     
-    if len(sys.argv) > 5:
-        PLOTTING = np.bool(int(sys.argv[5]))
+    if len(sys.argv) > 6:
+        PLOTTING = np.bool(int(sys.argv[6]))
     else:
         PLOTTING = True
     
@@ -44,7 +48,7 @@ if __name__ == "__main__":
     tmp_file2 = os.path.join(tmp_files,'tmp_output.txt')
     prog = os.path.join(ROOT_PATH,'src','cpp','graph_cut')
     
-    square_size = 24 if SQUARE_SIZE == None else SQUARE_SIZE
+    square_size = [24 if SQUARE_SIZE_X == None else SQUARE_SIZE_X, 24 if SQUARE_SIZE_Y == None else SQUARE_SIZE_Y]
     
     # -------------------------------------------------------------------------
     # 1. Load data
@@ -59,9 +63,9 @@ if __name__ == "__main__":
     max_dist = int(np.maximum( np.max(predicted_distances), np.max(true_distances) ))
     
     # Crop a cube of given edge.
-    pos = list(np.random.randint(0,sizeY-square_size,1)) + list(np.random.randint(0,np.maximum(sizeX-square_size,1),1)) 
+    pos = list(np.random.randint(0,np.maximum(sizeY-square_size[1],1),1)) + list(np.random.randint(0,np.maximum(sizeX-square_size[0],1),1)) 
     
-    square_slice = [slice(pos[0],pos[0]+square_size), slice(pos[1],pos[1]+square_size)]
+    square_slice = [slice(pos[0],pos[0]+square_size[1]), slice(pos[1],pos[1]+square_size[0])]
     
     # cost_function = 'linear'
     # cost_function = 'linear_clipped'
@@ -70,59 +74,13 @@ if __name__ == "__main__":
     # cost_function = my_cost_function
     out = sr.reconstruct_surface(predicted_distances[square_slice], tmp_file1,tmp_file2,prog,overwrite=True, max_dist=max_dist, sampling = [1,1], cost_fun=cost_function)
     
-    score_pred, T_pred = sr.best_thresh(predicted_distances[square_slice], true_distances[square_slice],max_dist, score_func='L1')
-    VI_pred, T_pred_VI = sr.best_thresh(predicted_distances[square_slice], true_distances[square_slice],max_dist, score_func='VI')
     
-    VI_pred_dist = sr.score(predicted_distances[square_slice], true_distances[square_slice],'VI')
-    L1_err_pred = sr.score(predicted_distances[square_slice], true_distances[square_slice],'L1')
-    L2_err_pred = sr.score(predicted_distances[square_slice], true_distances[square_slice],'L2')
-    perc_pred = vdm.calculate_perc_of_correct(true_distances[square_slice].astype(np.int), predicted_distances[square_slice].astype(np.int))*100
     
-    assert L1_err_pred == vdm.calculate_L1(true_distances[square_slice], predicted_distances[square_slice])
-    assert L2_err_pred == vdm.calculate_L2(true_distances[square_slice], predicted_distances[square_slice])
     
-    score_smoothed, T_smoothed = sr.best_thresh(out, true_distances[square_slice],max_dist, score_func='L1')
-    VI_smoothed, T_smoothed_VI = sr.best_thresh(out, true_distances[square_slice],max_dist, score_func='VI')
+    sr.print_scores(true_distances[square_slice], predicted_distances[square_slice], out)
     
-    VI_smoothed_dist = sr.score(out, true_distances[square_slice],'VI')
-    L1_err_smoothed = sr.score(out, true_distances[square_slice],'L1')
-    L2_err_smoothed = sr.score(out, true_distances[square_slice],'L2')
-    perc_smoothed = vdm.calculate_perc_of_correct(true_distances[square_slice].astype(np.int), out.astype(np.int))*100
     
-    assert L1_err_smoothed == vdm.calculate_L1(true_distances[square_slice], out)
-    assert L2_err_smoothed == vdm.calculate_L2(true_distances[square_slice], out)
-    print L1_err_smoothed,'==', vdm.calculate_L1(true_distances[square_slice], out)
     
-    print "\n\n\t\t----------------------"
-    print '\033[1m' + "\t\t\tSCORES" + '\033[0m'
-    print "\t\t----------------------\n"
-    print "CNN prediction:\n"
-    print "\t-Segmentation:\n"
-    print "\t    -L1:"
-    print "\t        Best threshold: %d" % T_pred
-    print "\t        Error: %.5f" % score_pred
-    print "\t    -Variation of Information:"
-    print "\t        Best threshold: %d"% T_pred_VI
-    print "\t        Error: %.5f\n" % VI_pred
-    print "\t-Distance map:\n"
-    print "\t    -L1 error: %.3f" % L1_err_pred
-    print "\t    -L2 error: %.1f" % L2_err_pred
-    print "\t    -Percentage correct: %.2f%%" % perc_pred
-    print "\t    -VI score: %.3f\n\n" % VI_pred_dist
-    
-    print "Smoothed prediction:\n"
-    print "\t-Segmentation:\n"
-    print "\t    -L1:"
-    print "\t        Best threshold: %d" % T_smoothed
-    print "\t        Error: %.5f" % score_smoothed
-    print "\t    -Variation of Information:"
-    print "\t        Best threshold: %d"% T_smoothed_VI
-    print "\t        Error: %.5f\n" % VI_smoothed
-    print "\t-Distance map:\n"
-    print "\t    -L1 error: %.3f" % L1_err_smoothed
-    print "\t    -L2 error: %.1f" % L2_err_smoothed
-    print "\t    -Percentage correct: %.2f%%" % perc_smoothed
-    print "\t    -VI score: %.3f\n" % VI_smoothed_dist
         
 
 
@@ -130,21 +88,26 @@ if __name__ == "__main__":
         
         # Plot 3 slices throughout the cube.
         
+        VMIN = 0.5
+        VMAX = max_dist
+        cmap = pl.get_cmap('YlGnBu') # Pick a colormap: http://matplotlib.org/examples/color/colormaps_reference.html
+        cmap.set_under([0.7,0.95,0.5]) # Color for anything below VMIN
+        
         row_length = 3
         pl.subplot(1,row_length,1)
         
         pl.title('Predicted Distance')
-        pl.imshow(np.squeeze(predicted_distances[square_slice]), vmin=0, vmax=15,interpolation='nearest')
+        pl.imshow(np.squeeze(predicted_distances[square_slice]), vmin=VMIN, vmax=VMAX,interpolation='nearest', cmap=cmap)
         
         pl.subplot(1,row_length,2)
         
         pl.title('Smoothed Distance')
-        pl.imshow(np.squeeze(out), vmin=0, vmax=15,interpolation='nearest')
+        pl.imshow(np.squeeze(out), vmin=VMIN, vmax=VMAX,interpolation='nearest', cmap=cmap)
         
         pl.subplot(1,row_length,3)
         
         pl.title('Ground Truth')
-        pl.imshow(np.squeeze(true_distances[square_slice]), vmin=0, vmax=15,interpolation='nearest')
+        pl.imshow(np.squeeze(true_distances[square_slice]), vmin=VMIN, vmax=VMAX,interpolation='nearest', cmap=cmap)
         
         # Plot the 2D histograms
             
