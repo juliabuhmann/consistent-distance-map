@@ -11,6 +11,22 @@ sys.path.append(os.path.join(ROOT_PATH,'src','python'))
 
 import validate_distance_maps as vdm
 import surface_reconstruction as sr
+import argparse
+
+parser = argparse.ArgumentParser(description='Constrain distance map gradients by using Graph-Cut.')
+parser.add_argument('input_noisy', metavar='path_to_noisy_distance', type=str, help='The path to the TIFF file that contains the noisy data.')
+parser.add_argument('input_GT', metavar='path_to_GroundTruth', type=str, help='The path to the TIFF file that contains the ground truth data.')
+parser.add_argument('temporary_folder', metavar='path_to_a_tmp_folder', type=str, help='Path where to write some temporary data.')
+parser.add_argument('-s','--size', metavar='edge_size', type=int, help='Edge size of the square to analyze. Defaults to 24.')
+parser.add_argument('--sx', '--sizex', metavar='size_x', type=int, help="Edge size of the square to analyze along X. Defaults to 'size' if provided, or 24 if not.")
+parser.add_argument('--sy', '--sizey', metavar='size_y', type=int, help="Edge size of the square to analyze along Y. Defaults to 'size' if provided, or 24 if not.")
+parser.add_argument('--px', '--posx', metavar='pos_x', type=int, help="Position where to start cropping square along X. Picked at random if not provided.")
+parser.add_argument('--py', '--posy', metavar='pos_y', type=int, help="Position where to start cropping square along Y. Picked at random if not provided.")
+parser.add_argument('-v','--verbose', action='store_true', help='Print graph cut procedure details.')
+parser.add_argument('-n','--np','--noplot','--no_plot', action='store_false', help='Do not show plot.')
+parser.add_argument('--ns','--noscores','--no_scores', action='store_false', help='Do not print scores.')
+
+
 
 def my_cost_function( distance_map, augmented_shape ):
     column_height = augmented_shape[-1]
@@ -23,33 +39,29 @@ if __name__ == "__main__":
     # -------------------------------------------------------------------------
     # 0. Parse parameters
     # -------------------------------------------------------------------------
-    SQUARE_SIZE_X = None
+    args = parser.parse_args()
     
-    if len(sys.argv) > 3:
-        fnPredictedDists = sys.argv[1]
-        fnTrueDists = sys.argv[2]
-        tmp_files = sys.argv[3]
-    else:
-        raise Exception("Location of TIFF file required as first argument and path to folder where to create temp files as second argument.")
+    fnPredictedDists = args.input_noisy
+    fnTrueDists = args.input_GT
+    tmp_files = args.temporary_folder
     
-    if len(sys.argv) > 4:
-        SQUARE_SIZE_X = int(sys.argv[4])
-        if len(sys.argv) > 5:
-            SQUARE_SIZE_Y = int(sys.argv[5])
-        else:
-            SQUARE_SIZE_Y = SQUARE_SIZE_X
+    SQUARE_SIZE = args.size
+    SQUARE_SIZE_X = args.sx if args.sx != None else SQUARE_SIZE
+    SQUARE_SIZE_Y = args.sy if args.sy != None else SQUARE_SIZE
     
-    if len(sys.argv) > 6:
-        PLOTTING = np.bool(int(sys.argv[6]))
-    else:
-        PLOTTING = True
+    
+    posX = args.px
+    posY = args.py
+    
+    VERBOSE = args.verbose
+    PLOTTING = args.np
+    PRINTING = args.ns
+    
     
     tmp_file1 = os.path.join(tmp_files,'tmp.txt')
     tmp_file2 = os.path.join(tmp_files,'tmp_output.txt')
     prog = os.path.join(ROOT_PATH,'src','cpp','graph_cut')
     
-    
-    square_size = [24 if SQUARE_SIZE_X == None else SQUARE_SIZE_X, 24 if SQUARE_SIZE_Y == None else SQUARE_SIZE_Y]
     
     # -------------------------------------------------------------------------
     # 1. Load data
@@ -61,10 +73,17 @@ if __name__ == "__main__":
     sizeX = predicted_distances.shape[1]
     sizeY = predicted_distances.shape[0]
     
+    square_size = [24 if SQUARE_SIZE_X == None else np.minimum(SQUARE_SIZE_X,sizeX), 24 if SQUARE_SIZE_Y == None else np.minimum(SQUARE_SIZE_Y,sizeY)]
+    
+    
     max_dist = int(np.maximum( np.max(predicted_distances), np.max(true_distances) ))
     
+    
     # Crop a cube of given edge.
-    pos = list(np.random.randint(0,np.maximum(sizeY-square_size[1],1),1)) + list(np.random.randint(0,np.maximum(sizeX-square_size[0],1),1)) 
+    px = np.random.randint(0,np.maximum(sx-SQUARE_SIZE_X,1)) if posX == None else np.maximum(0,np.minimum(posX,sizeX-SQUARE_SIZE_X))
+    py = np.random.randint(0,np.maximum(sy-SQUARE_SIZE_Y,1)) if posY == None else np.maximum(0,np.minimum(posY,sizeY-SQUARE_SIZE_Y))
+    
+    pos = [py,px]
     
     square_slice = [slice(pos[0],pos[0]+square_size[1]), slice(pos[1],pos[1]+square_size[0])]
     
@@ -73,12 +92,12 @@ if __name__ == "__main__":
     # cost_function = 'weighted'
     cost_function = 'weighted_asymmetric'
     # cost_function = my_cost_function
-    out = sr.reconstruct_surface(predicted_distances[square_slice], tmp_file1,tmp_file2,prog,overwrite=True, max_dist=max_dist, sampling = [1,1], cost_fun=cost_function)
+    out = sr.reconstruct_surface(predicted_distances[square_slice], tmp_file1,tmp_file2,prog,overwrite=True, max_dist=max_dist, sampling = [1,1], cost_fun=cost_function, verbose=VERBOSE)
     
     
     
-    
-    sr.print_scores(true_distances[square_slice], predicted_distances[square_slice], out)
+    if PRINTING:
+        sr.print_scores(true_distances[square_slice], predicted_distances[square_slice], out)
     
     
     
@@ -175,7 +194,7 @@ if __name__ == "__main__":
             
             pl.subplot(3,row_length,6)
             
-            pl.title('Smoothed Distance vs Ground Truth')
+            pl.title('Ground Truth vs Smoothed Distance')
             pl.imshow(np.abs(true_distances[square_slice]-out), vmin=VMIN, vmax=VMAX,interpolation='nearest', cmap=cmap)
             pl.xticks([])
             pl.yticks([])
@@ -185,7 +204,7 @@ if __name__ == "__main__":
             
             pl.subplot(3,row_length,7)
             pl.title('Predicted Distance vs Smoothed Distance')
-            pl.imshow((np.array(predicted_distances[square_slice]>0,np.int)-np.array(out>0,np.int))*(VMAX-VMIN)*0.5+1, vmin=VMIN, vmax=VMAX,interpolation='nearest', cmap=cmap)
+            pl.imshow((np.array(predicted_distances[square_slice]>0,np.int)-np.array(out>0,np.int))*(VMAX-VMIN)+1, vmin=VMIN, vmax=VMAX,interpolation='nearest', cmap=cmap)
             pl.xticks([])
             pl.yticks([])
             pl.ylabel('Segmentation Comparison')
@@ -193,13 +212,13 @@ if __name__ == "__main__":
             pl.subplot(3,row_length,8)
             
             pl.title('Predicted Distance vs Ground Truth')
-            pl.imshow((np.array(predicted_distances[square_slice]>0,np.int)-np.array(true_distances[square_slice]>0,np.int))*(VMAX-VMIN)*0.5+1, vmin=VMIN, vmax=VMAX,interpolation='nearest', cmap=cmap)
+            pl.imshow((np.array(predicted_distances[square_slice]>0,np.int)-np.array(true_distances[square_slice]>0,np.int))*(VMAX-VMIN)+1, vmin=VMIN, vmax=VMAX,interpolation='nearest', cmap=cmap)
             pl.xticks([])
             pl.yticks([])
             
             pl.subplot(3,row_length,9)
-            pl.title('Smoothed Distance vs Ground Truth')
-            pl.imshow((np.array(true_distances[square_slice]>0,np.int)-np.array(out>0,np.int))*(VMAX-VMIN)*0.5+1, vmin=VMIN, vmax=VMAX,interpolation='nearest', cmap=cmap)
+            pl.title('Ground Truth vs Smoothed Distance')
+            pl.imshow((np.array(true_distances[square_slice]>0,np.int)-np.array(out>0,np.int))*(VMAX-VMIN)+1, vmin=VMIN, vmax=VMAX,interpolation='nearest', cmap=cmap)
             pl.xticks([])
             pl.yticks([])
             
