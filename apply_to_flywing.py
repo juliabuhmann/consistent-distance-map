@@ -25,6 +25,7 @@ parser.add_argument('--py', '--posy', metavar='pos_y', type=int, help="Position 
 parser.add_argument('-v','--verbose', action='store_true', help='Print graph cut procedure details.')
 parser.add_argument('-n','--np','--noplot','--no_plot', action='store_false', help='Do not show plot.')
 parser.add_argument('--ns','--noscores','--no_scores', action='store_false', help='Do not print scores.')
+parser.add_argument('--seed', type=int, help='Seed for random number generator.')
 
 
 
@@ -57,6 +58,8 @@ if __name__ == "__main__":
     PLOTTING = args.np
     PRINTING = args.ns
     
+    seed = args.seed if args.seed != None else 555
+    
     
     tmp_file1 = os.path.join(tmp_files,'tmp.txt')
     tmp_file2 = os.path.join(tmp_files,'tmp_output.txt')
@@ -80,6 +83,7 @@ if __name__ == "__main__":
     
     
     # Crop a cube of given edge.
+    np.random.seed(seed)
     px = np.random.randint(0,np.maximum(sx-SQUARE_SIZE_X,1)) if posX == None else np.maximum(0,np.minimum(posX,sizeX-SQUARE_SIZE_X))
     py = np.random.randint(0,np.maximum(sy-SQUARE_SIZE_Y,1)) if posY == None else np.maximum(0,np.minimum(posY,sizeY-SQUARE_SIZE_Y))
     
