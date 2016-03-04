@@ -153,6 +153,12 @@ def prepare_problem(distance_map, path_output, max_dist=None, sampling=None, ove
         if hasattr(cost_fun, '__call__'): # Is a function handle
             weights = cost_fun(distance_map, augmented_shape)
             
+        elif isinstance(cost_fun,np.ndarray):
+            if cost_fun.shape == (max_dist+1,max_dist+1):
+                weights = cost_fun[distance_map.astype(np.int)]
+            else:
+                raise Exception("Cost function has to be a square array with n_levels^2 shape. Provided array had shape: (" + str(cost_fun.shape[0]) + ', ' + str(cost_fun.shape[1]) + ').')
+            
         elif cost_fun == 0 or (isinstance(cost_fun,str) and cost_fun.lower() in ['lin','linear']):
             weights = np.abs(np.ones(augmented_shape)*range(column_height) - distance_map[slice_]) # Linear cost.
             
