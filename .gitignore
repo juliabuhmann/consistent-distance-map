@@ -2,3 +2,4 @@
 graph_cut
 *.o
 *.pyc
+*.gch
