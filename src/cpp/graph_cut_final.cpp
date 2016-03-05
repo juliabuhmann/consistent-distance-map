@@ -18,7 +18,7 @@ int graph_cut3D(std::string input, std::string output)
     int imax = std::numeric_limits<int>::max();
     float fmax = std::numeric_limits<float>::max();
     
-    int INF = imax;
+    float INF = fmax/1024;
 
 
 
@@ -156,7 +156,7 @@ int graph_cut3D(std::string input, std::string output)
     while (repeat){
         inter1 = std::clock();
         
-        typedef Graph<int,int,int> GraphType;
+        typedef Graph<float,float,float> GraphType;
 
         GraphType *g = new GraphType(/*estimated # of nodes*/ n_nodes, /*estimated # of edges*/ n_neighbors*n_nodes); 
         
@@ -207,8 +207,10 @@ int graph_cut3D(std::string input, std::string output)
                                                 
                                                 int ind_dest = (x+px)*yzw + (y+py)*zw + (z+pz)*w_row + w+pw;
                                                 
-                                                //printf ("%d, %d, %d, %d  ->  ", x, y, z, w);
+                                                //printf ("INF: %d, %d, %d, %d  ->  ", x, y, z, w);
                                                 //printf ("%d, %d, %d, %d\n", x+px, y+py, z+pz, w+pw);
+                                                //~ printf ("INF: %d, %d, %d  ->  ", x, y, w);
+                                                //~ printf ("%d, %d, %d\n", x+px, y+py, w+pw);
                                                 //printf ("%d -> %d\n", ind_src, ind_dest);
                                                 
                                                 g -> add_edge( ind_src, ind_dest,    /* capacities */  INF, 0 );
@@ -221,8 +223,11 @@ int graph_cut3D(std::string input, std::string output)
                                                     
                                                     //printf ("%d -> %d\n", ind_src, ind_dest);
                                                     if (ind_src != ind_dest){
-                                                        //printf ("%d, %d, %d, %d  ->  ", x, y, z, w);
-                                                        //printf ("%d, %d, %d, %d\n", x+px, y+py, z+pz, w+pw);
+                                                        //~ printf ("INF: %d, %d, %d  ->  ", x, y, w);
+                                                        //~ //printf ("INF: %d, %d, %d, %d  ->  ", x, y, z, w);
+                                                        //~ //printf ("%d, %d  ->  %d, %d\n", x, y, (x+px), (y+py));
+                                                        //~ //printf ("%d, %d, %d, %d\n", x+px, y+py, z+pz, 0);
+                                                        //~ printf ("%d, %d, %d\n", x+px, y+py, 0);
                                                         g -> add_edge( ind_src, ind_dest,    /* capacities */  INF, 0 );
                                                         edge_count++;
                                                     }
@@ -235,10 +240,15 @@ int graph_cut3D(std::string input, std::string output)
                                         
                         
                         if (weights[x][y][z][w] <= 0){
-                            g -> add_tweights( ind_src,    /* capacities */   -weights[x][y][z][w], 0);
+                            
+                            //printf ("%f, 0: %d, %d, %d, %d  ->  source\n", -weights[x][y][z][w], x, y, z, w);
+                            //~ printf ("%f, 0: %d, %d, %d  ->  source\n", -weights[x][y][z][w], x, y, w);
+                            g -> add_tweights( ind_src,    /* capacities */   float(-weights[x][y][z][w]), float(0.));
                             tedge_count++;}
                         else{
-                            g -> add_tweights( ind_src,    /* capacities */   0, weights[x][y][z][w]);
+                            //printf ("0, %f: %d, %d, %d, %d  ->  sink\n", weights[x][y][z][w], x, y, z, w);
+                            //~ printf ("0, %f: %d, %d, %d  ->  sink\n", weights[x][y][z][w], x, y, w);
+                            g -> add_tweights( ind_src,    /* capacities */   float(0.), float(weights[x][y][z][w]));
                             tedge_count++;}
                     }
                 }
@@ -289,6 +299,7 @@ int graph_cut3D(std::string input, std::string output)
             }
             
             weights[0][0][0][0] -= sum;
+            printf("OFFSET: %f",sum);
             second_iteration = true;
             
     
@@ -330,7 +341,7 @@ int graph_cut2D(std::string input, std::string output)
     int imax = std::numeric_limits<int>::max();
     float fmax = std::numeric_limits<float>::max();
     
-    int INF = imax;
+    float INF = fmax;
     
 
 
@@ -439,7 +450,7 @@ int graph_cut2D(std::string input, std::string output)
     while (repeat){
         inter1 = std::clock();
         
-        typedef Graph<int,int,int> GraphType;
+        typedef Graph<float,float,float> GraphType;
 
         GraphType *g = new GraphType(/*estimated # of nodes*/ n_nodes, /*estimated # of edges*/ n_neighbors*n_nodes); 
         
@@ -491,7 +502,7 @@ int graph_cut2D(std::string input, std::string output)
                                                 //printf ("%d, %d, %d, %d\n", x+px, y+py, z+pz, w+pw);
                                                 //printf ("%d -> %d\n", ind_src, ind_dest);
                                                 
-                                                g -> add_edge( ind_src, ind_dest,    /* capacities */  INF, 0 );
+                                                g -> add_edge( ind_src, ind_dest,    /* capacities */  INF, 0. );
                                                 edge_count++;
                                             }
                                             else
@@ -503,7 +514,7 @@ int graph_cut2D(std::string input, std::string output)
                                                     if (ind_src != ind_dest){
                                                         //printf ("%d, %d, %d, %d  ->  ", x, y, z, w);
                                                         //printf ("%d, %d, %d, %d\n", x+px, y+py, z+pz, w+pw);
-                                                        g -> add_edge( ind_src, ind_dest,    /* capacities */  INF, 0 );
+                                                        g -> add_edge( ind_src, ind_dest,    /* capacities */  INF, 0. );
                                                         edge_count++;
                                                     }
                                                 }
@@ -515,10 +526,10 @@ int graph_cut2D(std::string input, std::string output)
                                         
                         
                         if (weights[x][y][z] <= 0){
-                            g -> add_tweights( ind_src,    /* capacities */   -weights[x][y][z], 0);
+                            g -> add_tweights( ind_src,    /* capacities */   -weights[x][y][z], 0.);
                             tedge_count++;}
                         else{
-                            g -> add_tweights( ind_src,    /* capacities */   0, weights[x][y][z]);
+                            g -> add_tweights( ind_src,    /* capacities */   0., weights[x][y][z]);
                             tedge_count++;}
                     
                 }
