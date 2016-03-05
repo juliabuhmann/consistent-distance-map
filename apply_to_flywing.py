@@ -84,8 +84,8 @@ if __name__ == "__main__":
     
     # Crop a cube of given edge.
     np.random.seed(seed)
-    px = np.random.randint(0,np.maximum(sx-SQUARE_SIZE_X,1)) if posX == None else np.maximum(0,np.minimum(posX,sizeX-SQUARE_SIZE_X))
-    py = np.random.randint(0,np.maximum(sy-SQUARE_SIZE_Y,1)) if posY == None else np.maximum(0,np.minimum(posY,sizeY-SQUARE_SIZE_Y))
+    px = np.random.randint(0,np.maximum(sizeX-SQUARE_SIZE_X,1)) if posX == None else np.maximum(0,np.minimum(posX,sizeX-SQUARE_SIZE_X))
+    py = np.random.randint(0,np.maximum(sizeY-SQUARE_SIZE_Y,1)) if posY == None else np.maximum(0,np.minimum(posY,sizeY-SQUARE_SIZE_Y))
     
     pos = [py,px]
     
