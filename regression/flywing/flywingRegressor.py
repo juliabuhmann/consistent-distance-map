@@ -82,8 +82,8 @@ def log_done():
 # ==========================================================================
 log('START')
 
-folderModels = '/Volumes/FastData/ProjectWithJJL/Flywing/'
-folderPredict = '/Volumes/FastData/ProjectWithJJL/Flywing/Predictions/'
+folderModels = '/Users/jug/Volumes/FastData/ProjectWithJJL/Flywing/'
+folderPredict = '/Users/jug/Volumes/FastData/ProjectWithJJL/Flywing/Predictions/'
 
 # ---------------------------------------------------------------------------------------
 # TRAINING TRAINING TRAINING TRAINING TRAINING TRAINING TRAINING TRAINING TRAINING TRAINING 
@@ -91,11 +91,11 @@ folderPredict = '/Volumes/FastData/ProjectWithJJL/Flywing/Predictions/'
 
 # -- SMALL or MEDIUM -- SMALL or MEDIUM -- SMALL or MEDIUM -- SMALL or MEDIUM --
 # filenameModel = 'regressorOnSmallAll.pkl'
-# folderFeaturesTrain = '/Volumes/FastData/ProjectWithJJL/Flywing/Small/FeatureStacks/'
-# folderGtTrain = '/Volumes/FastData/ProjectWithJJL/Flywing/Small/GroundTruth/'
+# folderFeaturesTrain = '/Users/jug/Volumes/FastData/ProjectWithJJL/Flywing/Small/FeatureStacks/'
+# folderGtTrain = '/Users/jug/Volumes/FastData/ProjectWithJJL/Flywing/Small/GroundTruth/'
 # filenameModel = 'regressorOnMediumAll.pkl'
-# folderFeaturesTrain = '/Volumes/FastData/ProjectWithJJL/Flywing/Medium/FeatureStacks/'
-# folderGtTrain = '/Volumes/FastData/ProjectWithJJL/Flywing/Medium/GroundTruth/'
+# folderFeaturesTrain = '/Users/jug/Volumes/FastData/ProjectWithJJL/Flywing/Medium/FeatureStacks/'
+# folderGtTrain = '/Users/jug/Volumes/FastData/ProjectWithJJL/Flywing/Medium/GroundTruth/'
 
 # trainFeatureFiles = [ folderFeaturesTrain + 'feature-stack0001.tif',
                       # folderFeaturesTrain + 'feature-stack0002.tif',
@@ -122,60 +122,60 @@ folderPredict = '/Volumes/FastData/ProjectWithJJL/Flywing/Predictions/'
 
 # -- WHOLE WING -- WHOLE WING -- WHOLE WING -- WHOLE WING -- WHOLE WING -- 
 filenameModel = 'regressorOnFull_t100.pkl'
-folderFeaturesTrain = '/Volumes/FastData/ProjectWithJJL/Flywing/FullWing_t100/FeatureStacks/'
-folderGtTrain = '/Volumes/FastData/ProjectWithJJL/Flywing/FullWing_t100/GroundTruth/'
+folderFeaturesTrain = '/Users/jug/Volumes/FastData/ProjectWithJJL/Flywing/FullWing_t100/FeatureStacks/'
+folderGtTrain = '/Users/jug/Volumes/FastData/ProjectWithJJL/Flywing/FullWing_t100/GroundTruth/'
 trainFeatureFiles = [ folderFeaturesTrain + 'feature-stack0001.tif' ]
 trainGtFiles = [ folderGtTrain + 't100_GT_handCorrection.tif' ]
 
 # -- TRAIN -- TRAIN -- TRAIN -- TRAIN -- TRAIN -- TRAIN -- TRAIN -- TRAIN -- 
-log_start( 'Start training... ' )
-clf = train(trainFeatureFiles,trainGtFiles)
-log_done()
-log_start( 'Start writing model to "'+folderModels+filenameModel+'"... ' )
-joblib.dump(clf, folderModels+filenameModel)
-log_done()
+# log_start( 'Start training... ' )
+# clf = train(trainFeatureFiles,trainGtFiles)
+# log_done()
+# log_start( 'Start writing model to "'+folderModels+filenameModel+'"... ' )
+# joblib.dump(clf, folderModels+filenameModel)
+# log_done()
 
 # ---------------------------------------------------------------------------------------
 # TESTING TESTING TESTING TESTING TESTING TESTING TESTING TESTING TESTING TESTING TESTING
 # ---------------------------------------------------------------------------------------
 
 # -- SMALL or MEDIUM -- SMALL or MEDIUM -- SMALL or MEDIUM -- SMALL or MEDIUM --
-# folderFeaturesTest = '/Volumes/FastData/ProjectWithJJL/Flywing/Small/FeatureStacks/'
-# folderGtTest = '/Volumes/FastData/ProjectWithJJL/Flywing/Small/GroundTruth/'
-# folderFeaturesTest = '/Volumes/FastData/ProjectWithJJL/Flywing/Medium/FeatureStacks/'
-# folderGtTest = '/Volumes/FastData/ProjectWithJJL/Flywing/Medium/GroundTruth/'
+# folderFeaturesTest = '/Users/jug/Volumes/FastData/ProjectWithJJL/Flywing/Small/FeatureStacks/'
+# folderGtTest = '/Users/jug/Volumes/FastData/ProjectWithJJL/Flywing/Small/GroundTruth/'
+folderFeaturesTest = '/Users/jug/Volumes/FastData/ProjectWithJJL/Flywing/Medium/FeatureStacks/'
+folderGtTest = '/Users/jug/Volumes/FastData/ProjectWithJJL/Flywing/Medium/GroundTruth/'
 
-# testFeatureFiles = [ folderFeaturesTest + 'feature-stack0001.tif',
-                     # folderFeaturesTest + 'feature-stack0002.tif',
-                     # folderFeaturesTest + 'feature-stack0003.tif',
-                     # folderFeaturesTest + 'feature-stack0004.tif',
-                     # folderFeaturesTest + 'feature-stack0005.tif',
-                     # folderFeaturesTest + 'feature-stack0006.tif',
-                     # folderFeaturesTest + 'feature-stack0007.tif',
-                     # folderFeaturesTest + 'feature-stack0008.tif',
-                     # folderFeaturesTest + 'feature-stack0009.tif',
-                     # folderFeaturesTest + 'feature-stack0010.tif',
-                     # folderFeaturesTest + 'feature-stack0011.tif' ]
-# testGtFiles = [ folderGtTest + 't060.tif',
-                # folderGtTest + 't061.tif',
-                # folderGtTest + 't062.tif',
-                # folderGtTest + 't063.tif',
-                # folderGtTest + 't064.tif',
-                # folderGtTest + 't065.tif',
-                # folderGtTest + 't066.tif',
-                # folderGtTest + 't067.tif',
-                # folderGtTest + 't068.tif',
-                # folderGtTest + 't069.tif',
-                # folderGtTest + 't070.tif' ]
+testFeatureFiles = [ folderFeaturesTest + 'feature-stack0001.tif',
+                     folderFeaturesTest + 'feature-stack0002.tif',
+                     folderFeaturesTest + 'feature-stack0003.tif',
+                     folderFeaturesTest + 'feature-stack0004.tif',
+                     folderFeaturesTest + 'feature-stack0005.tif',
+                     folderFeaturesTest + 'feature-stack0006.tif',
+                     folderFeaturesTest + 'feature-stack0007.tif',
+                     folderFeaturesTest + 'feature-stack0008.tif',
+                     folderFeaturesTest + 'feature-stack0009.tif',
+                     folderFeaturesTest + 'feature-stack0010.tif',
+                     folderFeaturesTest + 'feature-stack0011.tif' ]
+testGtFiles = [ folderGtTest + 't060.tif',
+                folderGtTest + 't061.tif',
+                folderGtTest + 't062.tif',
+                folderGtTest + 't063.tif',
+                folderGtTest + 't064.tif',
+                folderGtTest + 't065.tif',
+                folderGtTest + 't066.tif',
+                folderGtTest + 't067.tif',
+                folderGtTest + 't068.tif',
+                folderGtTest + 't069.tif',
+                folderGtTest + 't070.tif' ]
 
 # -- WHOLE WING -- WHOLE WING -- WHOLE WING -- WHOLE WING -- WHOLE WING -- 
-folderFeaturesTest = '/Volumes/FastData/ProjectWithJJL/Flywing/FullWing_t100/FeatureStacks/'
-folderGtTest = '/Volumes/FastData/ProjectWithJJL/Flywing/FullWing_t100/GroundTruth/'
-testFeatureFiles = [ folderFeaturesTest + 'feature-stack0001.tif' ]
+# folderFeaturesTest = '/Users/jug/Volumes/FastData/ProjectWithJJL/Flywing/FullWing_t100/FeatureStacks/'
+# folderGtTest = '/Users/jug/Volumes/FastData/ProjectWithJJL/Flywing/FullWing_t100/GroundTruth/'
+# testFeatureFiles = [ folderFeaturesTest + 'feature-stack0001.tif' ]
 
 # -- LOAD MODEL -- LOAD MODEL -- LOAD MODEL -- LOAD MODEL -- LOAD MODEL -- 
-# filenameModel = 'regressorOnSmallAll.pkl'
-filenameModel = 'regressorOnMediumAll.pkl'
+filenameModel = 'regressorOnSmallAll.pkl'
+# filenameModel = 'regressorOnMediumAll.pkl'
 # filenameModel = 'regressorOnFull_t100.pkl'
 log_start( 'Start reading model from "'+folderModels+filenameModel+'"... ' )
 clf = joblib.load( folderModels+filenameModel )
@@ -187,7 +187,7 @@ log_done()
 # -- WRITE RESULTS -- WRITE RESULTS -- WRITE RESULTS -- WRITE RESULTS -- 
 log_start( 'Start writing results to "'+folderPredict+'"... ' )
 for i,img in enumerate(predImgs):
-  imsave(folderPredict+'prediction'+str(i)+'.tif', img)
-  pylab.imshow(img, interpolation='nearest')
-  pylab.show()
+  imsave(folderPredict+'prediction'+str(i)+'.tif', img.astype(np.float32))
+  # pylab.imshow(img, interpolation='nearest')
+  # pylab.show()
 log_done()

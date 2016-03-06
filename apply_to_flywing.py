@@ -2,7 +2,7 @@ import numpy as np
 import pylab as pl
 import os
 import sys
-from tifffile import imread
+from tifffile import *
 
 ROOT_PATH = os.path.dirname(os.path.realpath(__file__))
 
@@ -18,6 +18,7 @@ parser = argparse.ArgumentParser(description='Constrain distance map gradients b
 parser.add_argument('input_noisy', metavar='path_to_noisy_distance', type=str, help='The path to the TIFF file that contains the noisy data.')
 parser.add_argument('input_GT', metavar='path_to_GroundTruth', type=str, help='The path to the TIFF file that contains the ground truth data.')
 parser.add_argument('temporary_folder', metavar='path_to_a_tmp_folder', type=str, help='Path where to write some temporary data.')
+parser.add_argument('output_file', metavar='path_to_output_file', type=str, help='Path and filename of output TIFF file.')
 parser.add_argument('-s','--size', metavar='edge_size', type=int, help='Edge size of the square to analyze. Defaults to 24.')
 parser.add_argument('--sx', '--sizex', metavar='size_x', type=int, help="Edge size of the square to analyze along X. Defaults to 'size' if provided, or 24 if not.")
 parser.add_argument('--sy', '--sizey', metavar='size_y', type=int, help="Edge size of the square to analyze along Y. Defaults to 'size' if provided, or 24 if not.")
@@ -46,6 +47,7 @@ if __name__ == "__main__":
     fnPredictedDists = args.input_noisy
     fnTrueDists = args.input_GT
     tmp_files = args.temporary_folder
+    fnOutput = args.output_file
     
     SQUARE_SIZE = args.size
     SQUARE_SIZE_X = args.sx if args.sx != None else SQUARE_SIZE
@@ -98,6 +100,11 @@ if __name__ == "__main__":
     cost_function = 'weighted_asymmetric'
     # cost_function = my_cost_function
     out = sr.reconstruct_surface(predicted_distances[square_slice], tmp_file1,tmp_file2,prog,overwrite=True, max_dist=max_dist, sampling = [1,1], cost_fun=cost_function, verbose=VERBOSE)
+
+    
+    # save result as tiff
+    imsave(fnOutput, out.astype(np.float32))
+
     
     
     

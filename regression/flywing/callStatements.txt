@@ -1,3 +1,5 @@
 %run apply_to_flywing.py /Users/jug/Volumes/FastData/ProjectWithJJL/Flywing/Medium/Predictions/prediction0.tif /Users/jug/Volumes/FastData/ProjectWithJJL/Flywing/Medium/GroundTruth/t060.tif /Users/jug/Volumes/FastData/ProjectWithJJL/temp 185
 
 %run apply_to_flywing.py /Users/jug/Volumes/FastData/ProjectWithJJL/Flywing/FullWing_t100/Predictions/fullWing_trainedWithFullMedium_masked.tif /Users/jug/Volumes/FastData/ProjectWithJJL/Flywing/FullWing_t100/GroundTruth/t100_GT_handCorrection_masked.tif /Users/jug/Volumes/FastData/ProjectWithJJL/temp 300 200
+
+%run apply_to_flywing.py /Users/jug/Volumes/FastData/ProjectWithJJL/Flywing/Medium/Predictions/prediction0.tif /Users/jug/Volumes/FastData/ProjectWithJJL/Flywing/Medium/GroundTruth/t060.tif /Users/jug/Volumes/FastData/ProjectWithJJL/temp --sx 185 --sy 193
