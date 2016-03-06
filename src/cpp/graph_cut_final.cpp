@@ -299,7 +299,7 @@ int graph_cut3D(std::string input, std::string output)
             }
             
             weights[0][0][0][0] -= sum;
-            printf("OFFSET: %f",sum);
+            
             second_iteration = true;
             
     
