@@ -22,16 +22,27 @@ def watershed(imgInput, cap=-1, sigma=1.0, min_dist_maxima=4):
     boundaries = find_boundaries(labels, mode='thick')
     return labels, boundaries, markers, local_maxi, imgCapped
 
-fnInputImage = '/Users/jug/ownCloud/ProjectRegSeg/data/Flywing/Medium/Smoothed/t060.tif'
-imgInput = imread(fnInputImage)
-labels,boundaries,markers,maxima,imgSmoothed = watershed(imgInput, cap=-1)
 
-pl.subplot(1,3,1)
-pl.imshow(imgInput)
-pl.subplot(1,3,2)
-pl.imshow(labels + 10*boundaries)
-pl.subplot(1,3,3)
-pl.imshow(imgSmoothed + 10*maxima)
-# pl.imshow(markers)
-# pl.imshow(imgInput-5*boundaries)
-pl.show()
+PLOT = True
+SAVE = True
+
+fnInputImagePrefix = '/Users/jug/ownCloud/ProjectRegSeg/data/Flywing/Medium/Smoothed/t0'
+fnOutputImagePrefix = '/Users/jug/ownCloud/ProjectRegSeg/data/Flywing/Medium/Smoothed/seg_'
+for i in range(60,71):
+    imgInput = imread(fnInputImagePrefix+str(i)+'.tif')
+    labels,boundaries,markers,maxima,imgSmoothed = watershed(imgInput, cap=-1)
+
+    if SAVE:
+        imsave(fnOutputImagePrefix+'labels_t0'+str(i)+'.tif', labels)
+        imsave(fnOutputImagePrefix+'boundaries_t0'+str(i)+'.tif', boundaries.astype(np.int8))
+        imsave(fnOutputImagePrefix+'maxima_t0'+str(i)+'.tif', maxima.astype(np.int8))
+        imsave(fnOutputImagePrefix+'smoothed_t0'+str(i)+'.tif', imgSmoothed.astype(np.float32))
+
+    if PLOT:
+        pl.subplot(1,3,1)
+        pl.imshow(imgInput)
+        pl.subplot(1,3,2)
+        pl.imshow(labels + 10*boundaries)
+        pl.subplot(1,3,3)
+        pl.imshow(imgSmoothed + 10*maxima)
+        pl.show()
