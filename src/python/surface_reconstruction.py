@@ -84,7 +84,7 @@ def prepare_problem(distance_map, path_output, max_dist=None, sampling=None, ove
         max_dist = int(np.max(distance_map))
         print "Max distance not defined. Using " + str(max_dist) + "." 
     
-    if cost_fun == None:
+    if cost_fun is None:
         cost_fun='lin_clipped'
         
     column_height = max_dist+1 # ranges from 0 to max_dist
