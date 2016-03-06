@@ -176,7 +176,7 @@ def prepare_problem(distance_map, path_output, max_dist=None, sampling=None, ove
                 raise Exception("Cost function has to be a square array with n_levels^2 shape. Provided array had shape: (" + str(cost_fun.shape[0]) + ', ' + str(cost_fun.shape[1]) + ').')
             
         elif cost_fun == 0 or (isinstance(cost_fun,str) and cost_fun.lower() in ['lin','linear']):
-            print augmented_shape, column_height, slice_
+            
             weights = np.abs(np.ones(augmented_shape)*range(column_height) - distance_map[slice_]) # Linear cost.
             
         elif cost_fun == 1 or (isinstance(cost_fun,str) and cost_fun.lower() in ['lin_clipped','linear_clipped','lin clipped','linear clipped']):
@@ -196,7 +196,7 @@ def prepare_problem(distance_map, path_output, max_dist=None, sampling=None, ove
         # Weights between source/sink and nodes are determined based on the cost for selecting a node.
         slice_ = [slice(None) for _ in range(n_dims)] + [slice(0,1)]
         weights_diff = np.concatenate((weights[slice_], np.diff(weights,axis=-1)), axis=-1)
-        print weights_diff
+        #print weights_diff
         f_out.write("# weights list\n")
         f_out.write(" ".join([str(el) for el in weights_diff.ravel()]))
         f_out.write("\n#\n")
@@ -291,7 +291,7 @@ def score(image, ground_truth, score='L1'):
         Array containing the true distance.
         
     score: string
-        One of 'L1', 'L2', 'VI'.
+        One of 'L1', 'L2', 'VI', 'seg_VI'.
         
     '''
     
@@ -306,20 +306,28 @@ def score(image, ground_truth, score='L1'):
     elif str.upper(score) == 'VI':
         
         score_ = 0
-        n = np.size(image)
-        for val in range(0,int(np.maximum(np.max(image)+1,np.max(ground_truth)+1))):
-            idx = image==val
-            idy = ground_truth==val
-            
-            nx = np.sum(idx)*1./n
-            ny = np.sum(idy)*1./n
-            
-            rxy = np.sum(np.logical_and(idx,idy))*1./n
-            
-            if rxy > 0:
-                score_ -= rxy*(np.log(rxy/nx)+np.log(rxy/ny))
+        n = float(np.size(image))
+        
+        for val in np.unique(image):
+            for val2 in np.unique(ground_truth):
+                idx = image==val
+                idy = ground_truth==val2
+                
+                nx = np.sum(idx)/n
+                ny = np.sum(idy)/n
+                
+                rxy = np.sum(np.logical_and(idx,idy))/n
+                
+                if rxy > 0:
+                    score_ -= rxy*(np.log(rxy/nx)+np.log(rxy/ny))
             
         return score_
+        
+    elif str.upper(score) == 'SEG_VI':
+        im1 = _get_segmentation(np.invert(image.astype(np.bool)))[0]
+        im2 = _get_segmentation(np.invert(ground_truth.astype(np.bool)))[0]
+        
+        return _varinfo(im1,im2)
     
     elif str.lower(score) in ['percentage', 'perc', 'p']:
         
@@ -327,14 +335,100 @@ def score(image, ground_truth, score='L1'):
     else:
         
         raise Exception("Not recognized")
-   
+
+def _get_segmentation(binary_image):
+    
+    return ni.label(binary_image)
+
+
+
+def _segmentation_VI(binary_image1, binary_image2,edge_image=True):
+    
+    if edge_image:
+        seg1, n1 = _get_segmentation(np.invert(binary_image1))
+        seg2, n2 = _get_segmentation(np.invert(binary_image2))
+    else:
+        seg1, n1 = _get_segmentation(binary_image1)
+        seg2, n2 = _get_segmentation(binary_image2)
+    
+    score_ = 0.
+    n = np.size(binary_image1)
+    for val in range(1,n1+1):
+        for val2 in range(1,n2+1):
+            id1 = seg1==val
+            id2 = seg2==val2
+            
+            nx = np.sum(id1)*1.
+            ny = np.sum(id2)*1.
+            
+            #rxy = np.sum(np.logical_and(id1,id2))*1./n
+            rxyn = np.sum(np.logical_and(id1,id2))*1.
+            
+            if rxyn > 0.:
+                score_ -= rxyn*(np.log(rxyn/nx)+np.log(rxyn/ny))/n
+            #if stop:
+                #print 'n: %d, nx: %f, ny: %f, rxy: %f, score_diff: %f' % (n,nx,ny,rxy,rxy*(np.log(rxy/nx)+np.log(rxy/ny)))
+    
+                    
+    return score_    
+  
+  
+def _entropy(label):
+    N = np.size(label)
+    #~ N = np.sum(label>0)
+    k = [el for el in np.unique(label)]# if el != 0]
+    #~ k = [el for el in np.unique(label) if el != 0]
+    H = 0.
+      
+      
+    for i in k:
+        pk = float(np.sum(i == label))/N
+        H -= pk*np.log(pk)
+        if np.isnan(H):
+            raise Exception()
+    return H
+    
+def _varinfo(label1,label2):
+    
+    h1 = _entropy(label1)
+    h2 = _entropy(label2)
+
+    i12 = _mutualinfo(label1,label2)
+    
+    return h1 + h2 - 2*i12
+
+def _mutualinfo(label1,label2): 
+    
+    N = float(np.size(label1))
+    #~ N = float(np.sum(label1+label2>0))
+    k1 = [el for el in np.unique(label1)]# if el != 0]
+    k2 = [el for el in np.unique(label2)]# if el != 0]
+    #~ k1 = [el for el in np.unique(label1) if el != 0]
+    #~ k2 = [el for el in np.unique(label2) if el != 0]
+    I = 0
+
+
+    for i in k1:
+        # loop over the unique elements of L2
+        for j in k2:
+            # the mutual probability of two classification indices occurring in
+            # L1 and L2
+            pij = np.sum((label1 == i)*(label2 == j))/N
+            # the probability of a given classification index occurring in L1
+            pi = np.sum(label1 == i)/N
+            # the probability of a given classification index occurring in L2
+            pj = np.sum(label2 == j)/N
+            if pij > 0:
+                I += pij*np.log(pij/(pi*pj))
+            
+    return I
         
 def best_thresh(image, ground_truth, max_dist=None, score_func='L1'):
     
     if max_dist == None:
         max_dist = int(np.maximum(  np.max(image), np.max(ground_truth) ) )
     
-    thresholds = range(max_dist-1)
+    thresholds = range(1,max_dist-1)
     
     scores = [score(image<threshold,ground_truth<1,score_func) for threshold in thresholds]
     
@@ -359,6 +453,7 @@ def print_scores(ground_truth, noisy_distance, smoothed_distance):
     #--------------------------------------------------------------------------
     score_pred, T_pred = best_thresh(noisy_distance, ground_truth, score_func='L1')
     VI_pred, T_pred_VI = best_thresh(noisy_distance, ground_truth, score_func='VI')
+    seg_VI_pred, T_pred_seg_VI = best_thresh(noisy_distance, ground_truth, score_func='seg_VI')
     perc_pred, T_pred_perc = best_thresh(noisy_distance, ground_truth, score_func='percentage')
     
     VI_pred_dist = score(noisy_distance, ground_truth,'VI')
@@ -382,7 +477,10 @@ def print_scores(ground_truth, noisy_distance, smoothed_distance):
     print "\t        %% correct: %.5f" % perc_pred
     print "\t    -Variation of Information:"
     print "\t        Best threshold: %d"% T_pred_VI
-    print "\t        Error: %.5f\n" % VI_pred
+    print "\t        Error: %.5f" % VI_pred
+    print "\t    -Variation of Information on Connected Components:"
+    print "\t        Best threshold: %d"% T_pred_seg_VI
+    print "\t        Error: %.5f\n" % seg_VI_pred
     print "\t-Distance map:\n"
     print "\t    -L1 error: %.3f" % L1_err_pred
     print "\t    -L2 error: %.1f" % L2_err_pred
@@ -394,6 +492,7 @@ def print_scores(ground_truth, noisy_distance, smoothed_distance):
     
     score_smoothed, T_smoothed = best_thresh(smoothed_distance, ground_truth, score_func='L1')
     VI_smoothed, T_smoothed_VI = best_thresh(smoothed_distance, ground_truth, score_func='VI')
+    seg_VI_smoothed, T_smoothed_seg_VI = best_thresh(smoothed_distance, ground_truth, score_func='seg_VI')
     perc_smoothed, T_smoothed_perc = best_thresh(smoothed_distance, ground_truth, score_func='percentage')
     
     VI_smoothed_dist = score(smoothed_distance, ground_truth,'VI')
@@ -412,7 +511,10 @@ def print_scores(ground_truth, noisy_distance, smoothed_distance):
     print "\t        %% correct: %.5f" % perc_smoothed
     print "\t    -Variation of Information:"
     print "\t        Best threshold: %d"% T_smoothed_VI
-    print "\t        Error: %.5f\n" % VI_smoothed
+    print "\t        Error: %.5f" % VI_smoothed
+    print "\t    -Variation of Information on Connected Components:"
+    print "\t        Best threshold: %d"% T_smoothed_seg_VI
+    print "\t        Error: %.5f\n" % seg_VI_smoothed
     print "\t-Distance map:\n"
     print "\t    -L1 error: %.3f" % L1_err_smoothed
     print "\t    -L2 error: %.1f" % L2_err_smoothed
@@ -526,8 +628,9 @@ def solve_via_ILP(weights, max_gradient=1):
         #~ s.set_level_costs(nodes[coords], costs);
 
     print "Solving"
+    t0 = time()
     value = s.min_surface()
-
+    print "Solution found in", time()-t0, "seconds."
 
 
 
