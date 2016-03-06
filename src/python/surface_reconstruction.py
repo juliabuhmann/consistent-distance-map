@@ -291,7 +291,7 @@ def score(image, ground_truth, score='L1'):
         Array containing the true distance.
         
     score: string
-        One of 'L1', 'L2', 'VI', 'seg_VI'.
+        One of 'L1', 'L2', 'VI', 'CC_VI'.
         
     '''
     
@@ -323,7 +323,7 @@ def score(image, ground_truth, score='L1'):
             
         return score_
         
-    elif str.upper(score) == 'SEG_VI':
+    elif str.upper(score) == 'CC_VI':
         im1 = _get_segmentation(np.invert(image.astype(np.bool)))[0]
         im2 = _get_segmentation(np.invert(ground_truth.astype(np.bool)))[0]
         
@@ -342,7 +342,10 @@ def _get_segmentation(binary_image):
 
 
 
-def _segmentation_VI(binary_image1, binary_image2,edge_image=True):
+def _conn_comp_VI(binary_image1, binary_image2,edge_image=True):
+    # Replaced by _varinfo
+    
+    
     
     if edge_image:
         seg1, n1 = _get_segmentation(np.invert(binary_image1))
@@ -453,7 +456,7 @@ def print_scores(ground_truth, noisy_distance, smoothed_distance):
     #--------------------------------------------------------------------------
     score_pred, T_pred = best_thresh(noisy_distance, ground_truth, score_func='L1')
     VI_pred, T_pred_VI = best_thresh(noisy_distance, ground_truth, score_func='VI')
-    seg_VI_pred, T_pred_seg_VI = best_thresh(noisy_distance, ground_truth, score_func='seg_VI')
+    CC_VI_pred, T_pred_CC_VI = best_thresh(noisy_distance, ground_truth, score_func='CC_VI')
     perc_pred, T_pred_perc = best_thresh(noisy_distance, ground_truth, score_func='percentage')
     
     VI_pred_dist = score(noisy_distance, ground_truth,'VI')
@@ -479,8 +482,8 @@ def print_scores(ground_truth, noisy_distance, smoothed_distance):
     print "\t        Best threshold: %d"% T_pred_VI
     print "\t        Error: %.5f" % VI_pred
     print "\t    -Variation of Information on Connected Components:"
-    print "\t        Best threshold: %d"% T_pred_seg_VI
-    print "\t        Error: %.5f\n" % seg_VI_pred
+    print "\t        Best threshold: %d"% T_pred_CC_VI
+    print "\t        Error: %.5f\n" % CC_VI_pred
     print "\t-Distance map:\n"
     print "\t    -L1 error: %.3f" % L1_err_pred
     print "\t    -L2 error: %.1f" % L2_err_pred
@@ -492,7 +495,7 @@ def print_scores(ground_truth, noisy_distance, smoothed_distance):
     
     score_smoothed, T_smoothed = best_thresh(smoothed_distance, ground_truth, score_func='L1')
     VI_smoothed, T_smoothed_VI = best_thresh(smoothed_distance, ground_truth, score_func='VI')
-    seg_VI_smoothed, T_smoothed_seg_VI = best_thresh(smoothed_distance, ground_truth, score_func='seg_VI')
+    CC_VI_smoothed, T_smoothed_CC_VI = best_thresh(smoothed_distance, ground_truth, score_func='CC_VI')
     perc_smoothed, T_smoothed_perc = best_thresh(smoothed_distance, ground_truth, score_func='percentage')
     
     VI_smoothed_dist = score(smoothed_distance, ground_truth,'VI')
@@ -513,8 +516,8 @@ def print_scores(ground_truth, noisy_distance, smoothed_distance):
     print "\t        Best threshold: %d"% T_smoothed_VI
     print "\t        Error: %.5f" % VI_smoothed
     print "\t    -Variation of Information on Connected Components:"
-    print "\t        Best threshold: %d"% T_smoothed_seg_VI
-    print "\t        Error: %.5f\n" % seg_VI_smoothed
+    print "\t        Best threshold: %d"% T_smoothed_CC_VI
+    print "\t        Error: %.5f\n" % CC_VI_smoothed
     print "\t-Distance map:\n"
     print "\t    -L1 error: %.3f" % L1_err_smoothed
     print "\t    -L2 error: %.1f" % L2_err_smoothed
