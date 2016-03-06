@@ -27,8 +27,9 @@ def watershed(imgInput, cap=-1, sigma=1.0, min_dist_maxima=4):
 
 def run( fnInputImagePrefix, fnOutputImagePrefix, indexRange ):
     for i in indexRange:
-        imgInput = imread(fnInputImagePrefix+str(i)+'.tif')
-        labels,boundaries,markers,maxima,imgSmoothed = watershed(imgInput, cap=-1)
+        imgInput = np.round(imread(fnInputImagePrefix+str(i)+'.tif'))
+        labels,boundaries,markers,maxima,imgSmoothed = \
+                watershed(imgInput, cap=-1, sigma=1.0, min_dist_maxima=0)
 
         if SAVE:
             imsave(fnOutputImagePrefix+'labels_t0'+str(i)+'.tif', labels)
