@@ -23,12 +23,15 @@ def watershed(imgInput, cap=-1, sigma=1.0, min_dist_maxima=4):
     return labels, boundaries, markers, local_maxi, imgCapped
 
 
-PLOT = True
+PLOT = False
 SAVE = True
 
-fnInputImagePrefix = '/Users/jug/ownCloud/ProjectRegSeg/data/Flywing/Medium/Smoothed/t0'
-fnOutputImagePrefix = '/Users/jug/ownCloud/ProjectRegSeg/data/Flywing/Medium/Smoothed/seg_'
-for i in range(60,71):
+# fnInputImagePrefix = '/Users/jug/ownCloud/ProjectRegSeg/data/Flywing/Medium/Smoothed/t0'
+# fnOutputImagePrefix = '/Users/jug/ownCloud/ProjectRegSeg/data/Flywing/Medium/Smoothed/seg_'
+# for i in range(60,71):
+fnInputImagePrefix = '/Users/jug/ownCloud/ProjectRegSeg/data/Flywing/Medium/Predictions/prediction'
+fnOutputImagePrefix = '/Users/jug/ownCloud/ProjectRegSeg/data/Flywing/Medium/Predictions/seg_'
+for i in range(0,11):
     imgInput = imread(fnInputImagePrefix+str(i)+'.tif')
     labels,boundaries,markers,maxima,imgSmoothed = watershed(imgInput, cap=-1)
 
