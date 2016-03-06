@@ -11,6 +11,7 @@ sys.path.append(os.path.join(ROOT_PATH,'src','python'))
 
 import validate_distance_maps as vdm
 import surface_reconstruction as sr
+reload(sr)
 import argparse
 
 parser = argparse.ArgumentParser(description='Constrain distance map gradients by using Graph-Cut.')
@@ -105,7 +106,6 @@ if __name__ == "__main__":
     
     
     
-        
 
     PLOT_DIFFS = True # Whether to plot additional rows that show the difference between images.
     if PLOTTING:
