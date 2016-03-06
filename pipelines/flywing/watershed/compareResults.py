@@ -1,3 +1,5 @@
+# -*- coding: utf-8 -*-
+
 import os
 import sys
 import pylab as pl
@@ -56,5 +58,6 @@ for i in range(60,71):
     score2_L1 = sr.score( imgResult2, imgGt, score='L1')
     score1_VI = sr.score( imgResult1, imgGt, score='CC_VI')
     score2_VI = sr.score( imgResult2, imgGt, score='CC_VI')
-    print score1_L1, score1_VI, '  vs  ', score2_L1, score2_VI
+    # print score1_L1, score1_VI, '  vs  ', score2_L1, score2_VI
+    print 'ΔL1: ', str(score1_L1-score2_L1), '; ΔVI: ', str(score1_VI-score2_VI)
 
