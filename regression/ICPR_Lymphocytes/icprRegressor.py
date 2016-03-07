@@ -56,6 +56,8 @@ def regress ( clf, featureStackFilenames ):
   predictedImages = []
 
   for i,fnF in enumerate(featureStackFilenames):
+    print ' >> Starting to regress image ', i, ' of ', len(featureStackFilenames)
+
     imF = np.swapaxes(np.swapaxes(imread(fnF),0,2),0,1) 
     
     n_features = imF.shape[3]*imF.shape[2]
@@ -63,8 +65,8 @@ def regress ( clf, featureStackFilenames ):
     n_x = imF.shape[1]
     n_pixels = n_y*n_x
     
-    X = imF.reshape( (n_features, n_pixels) ).swapaxes(0,1)
-    yPred = clf.predict(X);
+    X = imF.reshape( (n_pixels, n_features) )
+    yPred = clf.predict(X)
     imPred = yPred.reshape( (n_y, n_x) )
     
     predictedImages.append( imPred )
@@ -106,21 +108,21 @@ trainGtFiles = [ os.path.join(folderGtTrain, fn) for fn in os.listdir(folderGtTr
 # print trainGtFiles
 
 # -- TRAIN -- TRAIN -- TRAIN -- TRAIN -- TRAIN -- TRAIN -- TRAIN -- TRAIN -- 
-log_start( 'Start training... ' )
-clf = train(trainFeatureFiles,trainGtFiles)
-log_done()
-log_start( 'Start writing model to "'+folderModels+filenameModel+'"... ' )
-joblib.dump(clf, folderModels+filenameModel)
-log_done()
+# log_start( 'Start training... ' )
+# clf = train(trainFeatureFiles,trainGtFiles)
+# log_done()
+# log_start( 'Start writing model to "'+folderModels+filenameModel+'"... ' )
+# joblib.dump(clf, folderModels+filenameModel)
+# log_done()
 
 # ---------------------------------------------------------------------------------------
 # TESTING TESTING TESTING TESTING TESTING TESTING TESTING TESTING TESTING TESTING TESTING
 # ---------------------------------------------------------------------------------------
-folderFeaturesTest = '/Users/jug/ownCloud/ProjectRegSeg/data/Histological/warwick_beta_cell/features_test/'
-folderGtTest = '/Users/jug/ownCloud/ProjectRegSeg/data/Histological/warwick_beta_cell/ground_truth_distmaps_test/'
+folderFeaturesTest = '/Users/jug/ownCloud/ProjectRegSeg/data/Histological/ICPR_Lymphocytes/features_test/'
+folderGtTest = '/Users/jug/ownCloud/ProjectRegSeg/data/Histological/ICPR_Lymphocytes/ground_truth_distance_test/'
 
-trainFeatureFiles = [ os.path.join(folderFeaturesTest, fn) for fn in os.listdir(folderFeaturesTest) if fn.endswith('.tif') ]
-trainGtFiles = [ os.path.join(folderGtTest, fn) for fn in os.listdir(folderGtTest) if fn.endswith('.tif') ]
+testFeatureFiles = [ os.path.join(folderFeaturesTest, fn) for fn in os.listdir(folderFeaturesTest) if fn.endswith('.tif') ]
+testGtFiles = [ os.path.join(folderGtTest, fn) for fn in os.listdir(folderGtTest) if fn.endswith('.tif') ]
 
 # -- LOAD MODEL -- LOAD MODEL -- LOAD MODEL -- LOAD MODEL -- LOAD MODEL -- 
 log_start( 'Start reading model from "'+folderModels+filenameModel+'"... ' )
