@@ -8,8 +8,8 @@ from skimage.filters import gaussian_filter
 from tifffile import *
 from skimage.segmentation import find_boundaries
 
-PLOT = False
-SAVE = True
+PLOT = True
+SAVE = False
 
 def watershed(imgInput, cap=-1, sigma=1.0, min_dist_maxima=4):
     normFac = imgInput.max()
@@ -29,7 +29,7 @@ def run( fnInputImagePrefix, fnOutputImagePrefix, indexRange ):
     for i in indexRange:
         imgInput = np.round(imread(fnInputImagePrefix+str(i)+'.tif'))
         labels,boundaries,markers,maxima,imgSmoothed = \
-                watershed(imgInput, cap=-1, sigma=1.0, min_dist_maxima=0)
+                watershed(imgInput, cap=-1, sigma=0.4, min_dist_maxima=4)
 
         if SAVE:
             imsave(fnOutputImagePrefix+'labels_t0'+str(i)+'.tif', labels)
@@ -44,13 +44,14 @@ def run( fnInputImagePrefix, fnOutputImagePrefix, indexRange ):
             pl.imshow(labels + 10*boundaries)
             pl.subplot(1,3,3)
             pl.imshow(imgSmoothed + 10*maxima)
+            pl.show()
  
 print 'Starting run 1...'
 fnInputImagePrefix = '/Users/jug/ownCloud/ProjectRegSeg/data/Flywing/Medium/Smoothed/t0'
 fnOutputImagePrefix = '/Users/jug/ownCloud/ProjectRegSeg/data/Flywing/Medium/Smoothed/seg_'
-run( fnInputImagePrefix, fnOutputImagePrefix, range(60,71) )
+run( fnInputImagePrefix, fnOutputImagePrefix, range(60,61) )
 
 print 'Starting run 2...'
 fnInputImagePrefix = '/Users/jug/ownCloud/ProjectRegSeg/data/Flywing/Medium/Predictions/prediction'
 fnOutputImagePrefix = '/Users/jug/ownCloud/ProjectRegSeg/data/Flywing/Medium/Predictions/seg_'
-run( fnInputImagePrefix, fnOutputImagePrefix, range(0,11) )
+run( fnInputImagePrefix, fnOutputImagePrefix, range(0,01) )
