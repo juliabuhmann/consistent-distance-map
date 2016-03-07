@@ -27,10 +27,10 @@ def train( featureStackFilenames, groundTruthFilenames ):
     imF = np.swapaxes(np.swapaxes(imread(fnF),0,2),0,1) 
     imG = imread(fnG)
 
-    print fnF
-    print imF.shape
-    print fnG
-    print imG.shape
+    # print fnF
+    # print imF.shape
+    # print fnG
+    # print imG.shape
     n_features = imF.shape[3]*imF.shape[2]
     n_y = imF.shape[0]
     n_x = imF.shape[1]
@@ -38,6 +38,17 @@ def train( featureStackFilenames, groundTruthFilenames ):
 
     X_i = imF.reshape( (n_pixels, n_features) )
     y_i = imG.reshape( (n_pixels) )
+
+    print y_i.size
+
+    # filter out useless training data
+    max_dist = y_i.max()
+    elements_to_take = y_i<max_dist
+    elements_to_take = np.logical_or( elements_to_take, np.random.rand(y_i.size)<0.01 )
+    X_i = X_i[elements_to_take]
+    y_i = y_i[elements_to_take]
+
+    print y_i.size
 
     if 'X' in locals():
       X = np.concatenate((X,X_i))
@@ -47,7 +58,7 @@ def train( featureStackFilenames, groundTruthFilenames ):
       y = y_i
 
   params = {'n_estimators': 500, 'max_depth': 4, 'min_samples_split': 1,
-            'learning_rate': 0.01, 'loss': 'ls'}
+            'learning_rate': 0.01, 'loss': 'ls', 'verbose': 3}
   clf = ensemble.GradientBoostingRegressor(**params)
   clf.fit(X, y)
   return clf, X, y
