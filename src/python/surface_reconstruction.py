@@ -9,7 +9,7 @@ import sys
 import resource
 from subprocess import call, STDOUT
 import validate_distance_maps as vdm
-
+reload(vdm)
 
 def prepare_problem(distance_map, path_output, max_dist=None, sampling=None, overwrite=False, cost_fun='lin_clipped',clipping_dist=4):
     '''
@@ -161,36 +161,7 @@ def prepare_problem(distance_map, path_output, max_dist=None, sampling=None, ove
  
         ### Write terminal edge weights into the file.
         
-        if len(distance_map.shape) < n_dims:
-            slice_ = [slice(None) for _ in range(n_dims-1)] + [np.newaxis,np.newaxis]
-        else:
-            slice_ = [slice(None) for _ in range(len(shape))] + [np.newaxis]
-
-        if hasattr(cost_fun, '__call__'): # Is a function handle
-            weights = cost_fun(distance_map, augmented_shape)
-            
-        elif isinstance(cost_fun,np.ndarray):
-            if cost_fun.shape == (max_dist+1,max_dist+1):
-                weights = cost_fun[distance_map.astype(np.int)]
-            else:
-                raise Exception("Cost function has to be a square array with n_levels^2 shape. Provided array had shape: (" + str(cost_fun.shape[0]) + ', ' + str(cost_fun.shape[1]) + ').')
-            
-        elif cost_fun == 0 or (isinstance(cost_fun,str) and cost_fun.lower() in ['lin','linear']):
-            
-            weights = np.abs(np.ones(augmented_shape)*range(column_height) - distance_map[slice_]) # Linear cost.
-            
-        elif cost_fun == 1 or (isinstance(cost_fun,str) and cost_fun.lower() in ['lin_clipped','linear_clipped','lin clipped','linear clipped']):
-            weights = np.minimum(np.abs(np.ones(augmented_shape)*range(column_height) - distance_map[slice_]),clipping_dist) # Linear cost with upper bound.
-            
-        elif cost_fun == 2 or (isinstance(cost_fun,str) and cost_fun.lower() in ['weighted']):
-            weights = np.abs(np.ones(augmented_shape)*range(column_height) - distance_map[slice_])*(max_dist-distance_map[slice_]) # Linear cost weighted by inverse distance. All costs are 0 if predicted distance = max_dist, and slope is maximal when predicted distance is 0.
-        
-        elif cost_fun == 3 or (isinstance(cost_fun,str) and cost_fun.lower() in ['weighted_asymmetric','weighted_asym']):
-             # Linear cost weighted by inverse distance. All costs are 0 if predicted distance = max_dist, and slope is maximal when predicted distance is 0. Costs are larger for distances larger than prediction (e.g: c(0) = 4, c(1) = 2, c(2) = 0, c(3) = 4, c(4) = 8...)
-            weights = np.ones(augmented_shape)*range(column_height) - distance_map[slice_] # Linear cost with upper bound.
-            weights[weights<0] = weights[weights<0]*-0.5
-            weights = weights*(max_dist-distance_map[slice_]) # Linear cost with upper bound.
-        
+        weights = compute_weights(distance_map, max_dist, cost_fun=cost_fun, clipping_dist=clipping_dist)
         
         
         # Weights between source/sink and nodes are determined based on the cost for selecting a node.
@@ -206,6 +177,52 @@ def prepare_problem(distance_map, path_output, max_dist=None, sampling=None, ove
 
     f_out.close()
     return augmented_shape
+
+
+
+def compute_weights(distance_map, max_dist, cost_fun='linear', clipping_dist=4):
+    
+    shape = distance_map.shape
+    n_dims = len(shape)
+    column_height = max_dist+1
+    augmented_shape = list(shape) + [column_height]
+    
+    if len(distance_map.shape) < n_dims: # 2D data
+        slice_ = [slice(None) for _ in range(n_dims-1)] + [np.newaxis,np.newaxis]
+    else:
+        slice_ = [slice(None) for _ in range(len(shape))] + [np.newaxis]
+
+    if hasattr(cost_fun, '__call__'): # Is a function handle
+        weights = cost_fun(distance_map, augmented_shape)
+        
+    elif isinstance(cost_fun,np.ndarray):
+        if cost_fun.shape == (max_dist+1,max_dist+1):
+            weights = cost_fun[distance_map.astype(np.int)]
+        else:
+            raise Exception("Cost function has to be a square array with n_levels^2 shape. Provided array had shape: (" + str(cost_fun.shape[0]) + ', ' + str(cost_fun.shape[1]) + ').')
+        
+    elif cost_fun == 0 or (isinstance(cost_fun,str) and cost_fun.lower() in ['lin','linear']):
+        
+        weights = np.abs(np.ones(augmented_shape)*range(column_height) - distance_map[slice_]) # Linear cost.
+        
+    elif cost_fun == 1 or (isinstance(cost_fun,str) and cost_fun.lower() in ['lin_clipped','linear_clipped','lin clipped','linear clipped']):
+        weights = np.minimum(np.abs(np.ones(augmented_shape)*range(column_height) - distance_map[slice_]),clipping_dist) # Linear cost with upper bound.
+        
+    elif cost_fun == 2 or (isinstance(cost_fun,str) and cost_fun.lower() in ['weighted']):
+        weights = np.abs(np.ones(augmented_shape)*range(column_height) - distance_map[slice_])*(max_dist-distance_map[slice_]) # Linear cost weighted by inverse distance. All costs are 0 if predicted distance = max_dist, and slope is maximal when predicted distance is 0.
+    
+    elif cost_fun == 3 or (isinstance(cost_fun,str) and cost_fun.lower() in ['weighted_asymmetric','weighted_asym']):
+         # Linear cost weighted by inverse distance. All costs are 0 if predicted distance = max_dist, and slope is maximal when predicted distance is 0. Costs are larger for distances larger than prediction (e.g: c(0) = 4, c(1) = 2, c(2) = 0, c(3) = 4, c(4) = 8...)
+        weights = np.ones(augmented_shape)*range(column_height) - distance_map[slice_] # Linear cost with upper bound.
+        weights[weights<0] = weights[weights<0]*-0.5
+        weights = weights*(max_dist-distance_map[slice_]) # Linear cost with upper bound.
+    else:
+        raise Exception("Cost function was not understood.")
+        
+    return weights
+
+
+
     
     
 def call_graph_cut(input_file, output_file, prog, verbose=False):
@@ -454,6 +471,9 @@ def print_scores(ground_truth, noisy_distance, smoothed_distance):
     #--------------------------------------------------------------------------
     # Noisy distance scores
     #--------------------------------------------------------------------------
+    a = np.copy(ground_truth)
+    b = np.copy(noisy_distance)
+    c = np.copy(smoothed_distance)
     score_pred, T_pred = best_thresh(noisy_distance, ground_truth, score_func='L1')
     VI_pred, T_pred_VI = best_thresh(noisy_distance, ground_truth, score_func='VI')
     CC_VI_pred, T_pred_CC_VI = best_thresh(noisy_distance, ground_truth, score_func='CC_VI')
@@ -524,6 +544,9 @@ def print_scores(ground_truth, noisy_distance, smoothed_distance):
     print "\t    -Percentage correct: %.2f%%" % perc_smoothed
     print "\t    -VI score: %.3f\n" % VI_smoothed_dist 
         
+    print     np.all(a == ground_truth)
+    print     np.all(b == noisy_distance)
+    print     np.all(c == smoothed_distance)
     
 def test(image, path_graph, path_output, C_prog, max_dist=None):
     
