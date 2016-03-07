@@ -10,7 +10,7 @@ def prepare_input(target, prediction):
         prediction = np.array(prediction)
     assert isinstance(target, np.ndarray), 'not a valid input dtype'
     assert isinstance(prediction, np.ndarray), 'not a valid input dtype'
-    assert target.shape == prediction.shape, 'input and prediction have different shape'
+    assert np.squeeze(target).shape == np.squeeze(prediction).shape, 'input and prediction have different shape'
     target = target.flatten()
     prediction = prediction.flatten()
     return target, prediction

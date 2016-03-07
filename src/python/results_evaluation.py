@@ -30,7 +30,6 @@ import os
 from time import time
 import sys
 import resource
-from subprocess import call, STDOUT
 import validate_distance_maps as vdm
 
 
@@ -208,77 +207,73 @@ def plot_histogram(values, ground_truth, max_dist):
     plt.title('2d histogram of distance to membrane results')
     plt.show()
 
-def print_scores(ground_truth, noisy_distance, smoothed_distance):
+def compare_scores(ground_truth, predictions, titles):
+    
+    if isinstance(titles, str):
+        
+        assert np.shape(np.squeeze(ground_truth)) == np.shape(np.squeeze(predictions))
+        
+        titles = [titles]
+        predictions = [predictions]
+        
+    elif isinstance(titles, list):
+        
+        for prediction in predictions:
+            
+            assert np.shape(np.squeeze(ground_truth)) == np.shape(np.squeeze(prediction))
+    
+    
+    assert len(predictions) == len(titles)
+    
+    
+    
+    print "\t\t----------------------"
+    print '\033[1m' + "\t\t\tSCORES" + '\033[0m'
+    print "\t\t----------------------\n"
+    
+    for prediction, title in zip(predictions, titles):
+        print_scores(ground_truth, prediction, title=title)
+        print "\n"
+        
+    
+    
+    
+def print_scores(ground_truth, estimate, title='Prediction'):
     
     #--------------------------------------------------------------------------
     # Noisy distance scores
     #--------------------------------------------------------------------------
-    score_pred, T_pred = best_thresh(noisy_distance, ground_truth, score_func='L1')
-    VI_pred, T_pred_VI = best_thresh(noisy_distance, ground_truth, score_func='VI')
-    CC_VI_pred, T_pred_CC_VI = best_thresh(noisy_distance, ground_truth, score_func='CC_VI')
-    perc_pred, T_pred_perc = best_thresh(noisy_distance, ground_truth, score_func='percentage')
+    best_L1, T_L1 = best_thresh(estimate, ground_truth, score_func='L1')
+    best_VI, T_VI = best_thresh(estimate, ground_truth, score_func='VI')
+    best_CC_VI, T_CC_VI = best_thresh(estimate, ground_truth, score_func='CC_VI')
+    best_perc, T_perc = best_thresh(estimate, ground_truth, score_func='percentage')
     
-    VI_pred_dist = score(noisy_distance, ground_truth,'VI')
-    L1_err_pred = score(noisy_distance, ground_truth,'L1')
-    L2_err_pred = score(noisy_distance, ground_truth,'L2')
-    perc_pred = score(noisy_distance, ground_truth,'percentage')
+    VI_dist = score(estimate, ground_truth,'VI')
+    L1_dist = score(estimate, ground_truth,'L1')
+    L2_dist = score(estimate, ground_truth,'L2')
+    perc_dist = score(estimate, ground_truth,'percentage')
     
     
     
-
-    print "\n\n\t\t----------------------"
-    print '\033[1m' + "\t\t\tSCORES" + '\033[0m'
-    print "\t\t----------------------\n"
-    print "CNN prediction:\n"
+    print title + ":\n"
     print "\t-Segmentation:\n"
     print "\t    -L1:"
-    print "\t        Best threshold: %d" % T_pred
-    print "\t        Error: %.5f" % score_pred
+    print "\t        Best threshold: %d" % T_L1
+    print "\t        Error: %.5f" % best_L1
     print "\t    -Percentage correct:"
-    print "\t        Best threshold: %d" % T_pred_perc
-    print "\t        %% correct: %.5f" % perc_pred
+    print "\t        Best threshold: %d" % T_perc
+    print "\t        %% correct: %.5f" % best_perc
     print "\t    -Variation of Information:"
-    print "\t        Best threshold: %d"% T_pred_VI
-    print "\t        Error: %.5f" % VI_pred
+    print "\t        Best threshold: %d"% T_VI
+    print "\t        Error: %.5f" % best_VI
     print "\t    -Variation of Information on Connected Components:"
-    print "\t        Best threshold: %d"% T_pred_CC_VI
-    print "\t        Error: %.5f\n" % CC_VI_pred
+    print "\t        Best threshold: %d"% T_CC_VI
+    print "\t        Error: %.5f\n" % best_CC_VI
     print "\t-Distance map:\n"
-    print "\t    -L1 error: %.3f" % L1_err_pred
-    print "\t    -L2 error: %.1f" % L2_err_pred
-    print "\t    -Percentage correct: %.2f%%" % perc_pred
-    print "\t    -VI score: %.3f\n\n" % VI_pred_dist    
+    print "\t    -L1 error: %.3f" % L1_dist
+    print "\t    -L2 error: %.1f" % L2_dist
+    print "\t    -Percentage correct: %.2f%%" % perc_dist
+    print "\t    -VI score: %.3f\n" % VI_dist    
     
     
     
-    
-    score_smoothed, T_smoothed = best_thresh(smoothed_distance, ground_truth, score_func='L1')
-    VI_smoothed, T_smoothed_VI = best_thresh(smoothed_distance, ground_truth, score_func='VI')
-    CC_VI_smoothed, T_smoothed_CC_VI = best_thresh(smoothed_distance, ground_truth, score_func='CC_VI')
-    perc_smoothed, T_smoothed_perc = best_thresh(smoothed_distance, ground_truth, score_func='percentage')
-    
-    VI_smoothed_dist = score(smoothed_distance, ground_truth,'VI')
-    L1_err_smoothed = score(smoothed_distance, ground_truth,'L1')
-    L2_err_smoothed = score(smoothed_distance, ground_truth,'L2')
-    perc_smoothed = score(smoothed_distance, ground_truth,'percentage')
-  
-  
-    print "Smoothed prediction:\n"
-    print "\t-Segmentation:\n"
-    print "\t    -L1:"
-    print "\t        Best threshold: %d" % T_smoothed
-    print "\t        Error: %.5f" % score_smoothed
-    print "\t    -Percentage correct:"
-    print "\t        Best threshold: %d" % T_smoothed_perc
-    print "\t        %% correct: %.5f" % perc_smoothed
-    print "\t    -Variation of Information:"
-    print "\t        Best threshold: %d"% T_smoothed_VI
-    print "\t        Error: %.5f" % VI_smoothed
-    print "\t    -Variation of Information on Connected Components:"
-    print "\t        Best threshold: %d"% T_smoothed_CC_VI
-    print "\t        Error: %.5f\n" % CC_VI_smoothed
-    print "\t-Distance map:\n"
-    print "\t    -L1 error: %.3f" % L1_err_smoothed
-    print "\t    -L2 error: %.1f" % L2_err_smoothed
-    print "\t    -Percentage correct: %.2f%%" % perc_smoothed
-    print "\t    -VI score: %.3f\n" % VI_smoothed_dist 
