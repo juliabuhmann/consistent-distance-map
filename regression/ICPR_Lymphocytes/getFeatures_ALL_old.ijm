@@ -3,10 +3,6 @@ function action(inputfolder, filename, outputfolder) {
 	open(inputfolder+filename);
 	run("Trainable Weka Segmentation");
 	selectWindow("Trainable Weka Segmentation v3.1.0");
-	
-	call("trainableSegmentation.Weka_Segmentation.setMembranePatchSize", "8");
-	call("trainableSegmentation.Weka_Segmentation.setMaximumSigma", "6.0");	
-	
 	call("trainableSegmentation.Weka_Segmentation.setFeature", "Variance=true");
 	call("trainableSegmentation.Weka_Segmentation.setFeature", "Mean=true");
 	call("trainableSegmentation.Weka_Segmentation.setFeature", "Minimum=true");

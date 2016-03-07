@@ -38,6 +38,17 @@ def train( featureStackFilenames, groundTruthFilenames ):
 
     X_i = imF.reshape( (n_pixels, n_features) )
     y_i = imG.reshape( (n_pixels) )
+    
+    print y_i.size
+
+    # filter out useless training data
+    max_dist = y_i.max()
+    elements_to_take = y_i<max_dist
+    elements_to_take = np.logical_or( elements_to_take, np.random.rand(y_i.size)<0.01 )
+    X_i = X_i[elements_to_take]
+    y_i = y_i[elements_to_take]
+
+    print y_i.size
 
     if 'X' in locals():
       X = np.concatenate((X,X_i))
@@ -56,7 +67,7 @@ def regress ( clf, featureStackFilenames ):
   predictedImages = []
 
   for i,fnF in enumerate(featureStackFilenames):
-    print ' >> Starting to regress image ', i, ' of ', len(featureStackFilenames)
+    print ' >> Starting to regress image ', i+1, ' of ', len(featureStackFilenames)
 
     imF = np.swapaxes(np.swapaxes(imread(fnF),0,2),0,1) 
     
@@ -91,7 +102,7 @@ def log_done():
 log('START')
 PLOT = True
 
-filenameModel = 'regressorOnAll.pkl'
+filenameModel = 'regressorOnAllWithAll.pkl'
 
 folderModels = '/Users/jug/ownCloud/ProjectRegSeg/data/Histological/ICPR_Lymphocytes/models/'
 folderPredict = '/Users/jug/ownCloud/ProjectRegSeg/data/Histological/ICPR_Lymphocytes/predictions/'
@@ -99,7 +110,7 @@ folderPredict = '/Users/jug/ownCloud/ProjectRegSeg/data/Histological/ICPR_Lympho
 # ---------------------------------------------------------------------------------------
 # TRAINING TRAINING TRAINING TRAINING TRAINING TRAINING TRAINING TRAINING TRAINING TRAINING 
 # ---------------------------------------------------------------------------------------
-folderFeaturesTrain = '/Users/jug/ownCloud/ProjectRegSeg/data/Histological/ICPR_Lymphocytes/features/'
+folderFeaturesTrain = '/Users/jug/ownCloud/ProjectRegSeg/data/Histological/ICPR_Lymphocytes/features_ALL/'
 folderGtTrain = '/Users/jug/ownCloud/ProjectRegSeg/data/Histological/ICPR_Lymphocytes/ground_truth_distance/'
 trainFeatureFiles = [ os.path.join(folderFeaturesTrain, fn) for fn in os.listdir(folderFeaturesTrain) if fn.endswith('.tif') ]
 trainGtFiles = [ os.path.join(folderGtTrain, fn) for fn in os.listdir(folderGtTrain) if fn.endswith('.tif') ]
@@ -108,12 +119,12 @@ trainGtFiles = [ os.path.join(folderGtTrain, fn) for fn in os.listdir(folderGtTr
 # print trainGtFiles
 
 # -- TRAIN -- TRAIN -- TRAIN -- TRAIN -- TRAIN -- TRAIN -- TRAIN -- TRAIN -- 
-# log_start( 'Start training... ' )
-# clf = train(trainFeatureFiles,trainGtFiles)
-# log_done()
-# log_start( 'Start writing model to "'+folderModels+filenameModel+'"... ' )
-# joblib.dump(clf, folderModels+filenameModel)
-# log_done()
+log_start( 'Start training... ' )
+clf = train(trainFeatureFiles,trainGtFiles)
+log_done()
+log_start( 'Start writing model to "'+folderModels+filenameModel+'"... ' )
+joblib.dump(clf, folderModels+filenameModel)
+log_done()
 
 # ---------------------------------------------------------------------------------------
 # TESTING TESTING TESTING TESTING TESTING TESTING TESTING TESTING TESTING TESTING TESTING
