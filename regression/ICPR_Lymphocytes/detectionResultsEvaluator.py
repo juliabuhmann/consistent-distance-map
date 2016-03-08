@@ -131,15 +131,15 @@ for threshold in thresholdRange:
         FP_S += FPi
         NM_S += NMi
 
-        if PLOT: # or threshold==3:
+        if PLOT or threshold==3:
             pl.subplot(2,2,1)
             pl.imshow(imgR, interpolation='nearest')
             pl.subplot(2,2,2)
-            pl.imshow(imgRT, interpolation='nearest')
+            pl.imshow(imgRT+2*imgD, interpolation='nearest')
             pl.subplot(2,2,3)
             pl.imshow(imgS, interpolation='nearest')
             pl.subplot(2,2,4)
-            pl.imshow(imgST, interpolation='nearest')
+            pl.imshow(imgST+2*imgD, interpolation='nearest')
             pl.show()
 
     print 'Threshold: ', threshold, ' ',
