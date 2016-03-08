@@ -7,7 +7,7 @@ from sklearn.externals import joblib
 import pylab as pl
 import sys
 
-ROOT_PATH = os.path.dirname(os.path.realpath(__file__))
+ROOT_PATH = os.path.join( os.path.dirname(os.path.realpath(__file__)), os.pardir, os.pardir )
 sys.path.append(os.path.join(ROOT_PATH,'src','python'))
 import surface_reconstruction as sr
 
@@ -15,16 +15,20 @@ max_dist = 15
 max_training_size = 10000000  # Upper bound on the number of samples used for training.
 
 
-ROOT_DATA = '/Users/abouchar/ownCloud/ProjectRegSeg/data/' # Set to your local path
+ROOT_DATA = '/data/owncloud/ProjectRegSeg/data/' # Set to your local path
 
 training_set = range(1,9)  # Indices of images to use for training.
 
-#~ learner = GradientBoostingRegressor
-learner = RandomForestRegressor
+learner = GradientBoostingRegressor
+#~ learner = RandomForestRegressor
 
-
-learner_params = {'n_estimators':100,'verbose':2,'n_jobs':-1}
-
+if learner is RandomForestRegressor:
+    learner_params = {'n_estimators':250,'verbose':2,'n_jobs':-1}
+elif learner is GradientBoostingRegressor:
+    learner_params = {'n_estimators':250,'verbose':2}
+else:
+    learner_params = {}
+    
 n_features = 61
 
 TEST_REGRESSOR = False
@@ -187,7 +191,8 @@ if TRAIN_ALL_LOO_REGRESSORS:
                 
             
         leftOut_nb = "%03d" % i
-        saved_regressor_name = 'regressor_'+leftOut_nb+'leftOut'
+        learner_type = 'RF' if learner is RandomForestRegressor else 'GB'
+        saved_regressor_name = 'regressor_'+learner_type+'_'+leftOut_nb+'leftOut'
         regressor_path = os.path.join(ROOT_DATA,'Flybrain',saved_regressor_name)
         
         clf = learner(**learner_params)
