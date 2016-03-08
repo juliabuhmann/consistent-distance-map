@@ -76,6 +76,7 @@ def prepare_problem(distance_map, path_output, max_dist=None, sampling=None, ove
         shape = shape + [1]
         if sampling != None:
             sampling = sampling + [1]
+        distance_map = distance_map.reshape(shape)
         n_dims += 1
     else:
         return_2D = False
@@ -166,8 +167,10 @@ def prepare_problem(distance_map, path_output, max_dist=None, sampling=None, ove
         
         # Weights between source/sink and nodes are determined based on the cost for selecting a node.
         slice_ = [slice(None) for _ in range(n_dims)] + [slice(0,1)]
+        
         weights_diff = np.concatenate((weights[slice_], np.diff(weights,axis=-1)), axis=-1)
         #print weights_diff
+        
         f_out.write("# weights list\n")
         f_out.write(" ".join([str(el) for el in weights_diff.ravel()]))
         f_out.write("\n#\n")
@@ -180,9 +183,200 @@ def prepare_problem(distance_map, path_output, max_dist=None, sampling=None, ove
 
 
 
+
+
+def prepare_problem_VCE(distance_map, path_output, max_dist=None, sampling=None, overwrite=False, cost_fun='lin_clipped',clipping_dist=4, binaries=None):
+    '''
+    # Parameters
+    ============
+    
+    distance_map: numpy.ndarray
+        Array containing the regressed distance.
+        
+    path_output: string
+        Path to the file where to write the graph data that will be read by the
+        C++ program.
+        
+    max_dist: int
+        Maximum distance that can be predicted. If not provided, the maximal
+        value in 'distance_map' is used.
+        
+    sampling: list of ints
+        Sampling period in the image. The periods should be integers defined
+        relatively to each other (e.g. [1,1,2] corresponds to 3D data where
+        voxels are twice as large along Z). If not provided, assumes isotropic
+        data.
+        
+    overwrite: bool
+        Defines whether an existing output file can be overwritten with the new
+        output. Default is False.
+        
+    cost_fun: string
+        One of
+        
+        
+    # Example
+    =========
+    
+    
+    import h5py
+    
+    f = h5py.File(inputfilename, 'r')
+    
+    predicted_distance = f['inference_results'].value
+    
+    sampling = [1,1,2] # Z has half resolution.
+        
+    f.close()
+    
+    output_path = "/my/choice/of/path/graph_data.txt"
+    
+    prepare_problem(predicted_distance, output_path, max_dist=15, sampling=sampling)
+    
+        
+    '''
+    shape = list(np.shape(distance_map))
+    
+    n_dims = len(shape)
+    
+    
+    if sampling != None:
+        assert len(sampling) == len(shape)
+        assert min(sampling) >= 1
+
+
+    if n_dims == 2:
+        return_2D = True
+        shape = shape + [1]
+        if sampling != None:
+            sampling = sampling + [1]
+        n_dims += 1
+    else:
+        return_2D = False
+
+    if max_dist == None:
+        max_dist = int(np.max(distance_map))
+        print "Max distance not defined. Using " + str(max_dist) + "." 
+    
+    if cost_fun is None:
+        cost_fun='lin_clipped'
+    
+    
+    if binaries is None:
+        pass#binaries=np.zeros([max_dist+1]*4)
+    elif type(binaries) == np.ndarray:
+        assert all(np.array(binaries.shape) == [max_dist+1]*4)
+    elif isinstance(binaries,str):
+        binaries = get_binaries_mat(max_dist,binaries)
+    
+    
+    column_height = max_dist+1 # ranges from 0 to max_dist
+
+    if os.path.exists(path_output) and not overwrite:
+        raise Exception(path_output + ' already exists. Switch "overwrite" argument to True to replace it.')
+
+
+    with open(path_output,'wb') as f_out:
+        
+        if sampling == None: # If not defined, assume isotropic sampling.
+            sampling = [1 for _ in range(n_dims+1)]
+            
+        
+        # Neighborhood structure shape. 3 along all dimension except along the columns where it depends on the sampling rate.
+        str_shape = [3 for _ in range(n_dims)] + [2*max(sampling)+1]
+        
+        # Height of the center of the neigborhood structure along the columns.
+        half_height = max(sampling)
+        
+        ## Create neighborhood structure as a binary array that has ones where edges exist.
+        structure = np.zeros(str_shape,np.int)
+        
+        # Downwards-vertical edges.
+        slices = [slice(1,2) for _ in range(n_dims)] + [half_height-1]
+        structure[slices] = 1
+        
+        # Diagonal downards edges.
+        for i in range(n_dims):
+            slices_p = [slice(1,2) if i != j else slice(0,1) for j in range(n_dims)] + [half_height-sampling[i]]
+            slices_m = [slice(1,2) if i != j else slice(2,3) for j in range(n_dims)] + [half_height-sampling[i]]
+            
+            structure[slices_p] = 1
+            structure[slices_m] = 1
+            
+
+
+
+
+        #~ MAX_BOUND = np.finfo(np.float32).max
+        #~ MAX = MAX_BOUND/128
+        # Used as weight for pseudo-infinite edges.
+        
+        t0_graph = time()
+        # time graph construction.
+            
+
+
+
+        
+        
+        augmented_shape = shape + [column_height]
+        # Graph shape is image shape + one dimension the size of a column.
+
+
+        
+        ### Write number of nodes, maximal distance, number of dimensions, the shape of the nodes in the graph and the shape of the neighborhood structure.
+        
+        n_nodes = np.prod(augmented_shape)
+        n_dimensions = len(augmented_shape)
+        
+        f_out.write("# n_nodes, max_dist, dims, shape_weights, shape_neighborhood\n")
+        f_out.write(" ".join([str(n_nodes),str(max_dist),str(n_dimensions)] + [str(el) for el in augmented_shape] + [str(el) for el in structure.shape]))
+        f_out.write("\n#\n")
+
+        f_out.write("# neighborhood structure\n")
+        f_out.write(" ".join([str(el) for el in structure.ravel()]))
+        f_out.write("\n#\n")
+
+
+ 
+ 
+ 
+ 
+        ### Write terminal edge weights into the file.
+        
+        unaries = compute_weights(np.array(range(max_dist+1)), max_dist, cost_fun=cost_fun, clipping_dist=clipping_dist)
+        unaries = np.concatenate((unaries[:,0:1], np.diff(unaries,axis=-1)), axis=-1)
+        
+        
+        f_out.write("# unaries list\n")
+        f_out.write(" ".join([str(el) for el in unaries.ravel()]))
+        f_out.write("\n#\n")
+ 
+ 
+ 
+        ### Write terminal edge weights into the file.
+        if not binaries is None:
+            if isinstance(binaries,str):
+                binaries = get_binaries_mat(max_dist, binaries)
+            
+            
+            f_out.write("binaries list\n")
+            f_out.write(" ".join([str(el) for el in binaries.ravel()]))
+            f_out.write("\n#\n")
+            
+            
+        f_out.write("# predicted distance map\n")
+        f_out.write(" ".join([str(el) for el in distance_map.ravel()]))
+        f_out.write("\n#\n")    
+
+    f_out.close()
+    return augmented_shape
+
+
+
 def compute_weights(distance_map, max_dist, cost_fun='linear', clipping_dist=4):
     
-    shape = distance_map.shape
+    shape = np.shape(distance_map)
     n_dims = len(shape)
     column_height = max_dist+1
     augmented_shape = list(shape) + [column_height]
@@ -220,6 +414,24 @@ def compute_weights(distance_map, max_dist, cost_fun='linear', clipping_dist=4):
         raise Exception("Cost function was not understood.")
         
     return weights
+
+
+
+
+
+def get_binaries_mat(max_dist, binaries, *args):
+    
+    col_height = max_dist+1
+    if binaries == 'zeros':
+        return np.zeros([col_height]*4,np.float)
+    elif binaries == 'linear':
+        if len(args):
+            slope = args[0]
+        else:
+            slope = 0.75
+        return np.array([[slope*np.abs(np.array(range(col_height),np.float)[:,np.newaxis]-np.array(range(col_height),np.float)[np.newaxis,:]) for _ in range(col_height)] for __ in range(col_height)])
+    if binaries == 'zeros':
+        return np.zeros([col_height]*4,np.float)
 
 
 
@@ -280,6 +492,7 @@ def get_graph_cut_output(output_file, shape):
     
     '''
     
+    
     with open(output_file,'rb') as f:
         array = np.fromfile(f,dtype=np.bool,sep=' ').reshape(shape)
         
@@ -287,13 +500,31 @@ def get_graph_cut_output(output_file, shape):
     
     
     
-def reconstruct_surface(image, path_graph, path_output, C_prog, max_dist=None, sampling=None, overwrite=False, clipping_dist=4, cost_fun=None, verbose=False):
+def reconstruct_surface(image, path_graph, path_output, C_prog, max_dist=None, sampling=None, overwrite=False, clipping_dist=4, cost_fun=None, verbose=False, binaries=None):
     
-    shape = prepare_problem(image, path_graph, max_dist=max_dist, sampling=sampling, overwrite=overwrite, clipping_dist=clipping_dist, cost_fun=cost_fun)
+    if binaries is None:
+        shape = prepare_problem_VCE(image, path_graph, max_dist=max_dist, sampling=sampling, overwrite=overwrite, clipping_dist=clipping_dist, cost_fun=cost_fun)
+    else:
+        shape = prepare_problem_VCE(image, path_graph, max_dist=max_dist, sampling=sampling, overwrite=overwrite, clipping_dist=clipping_dist, cost_fun=cost_fun, binaries=binaries)
     
     call_graph_cut(path_graph, path_output, C_prog, verbose=verbose)
     
     return get_graph_cut_output(path_output, shape)
+    
+    
+    
+    
+    
+def reconstruct_surface_VCE(image, path_graph, path_output, C_prog, max_dist=None, sampling=None, overwrite=False, clipping_dist=4, cost_fun=None, binaries=None, verbose=False):
+    
+    shape = prepare_problem_VCE(image, path_graph, max_dist=max_dist, sampling=sampling, overwrite=overwrite, clipping_dist=clipping_dist, cost_fun=cost_fun, binaries=binaries)
+    
+    call_graph_cut(path_graph, path_output, C_prog, verbose=verbose)
+    
+    return get_graph_cut_output(path_output, shape)
+    
+    
+    
     
     
 def score(image, ground_truth, score='L1'):
