@@ -1,3 +1,5 @@
+#!/Users/jug/Library/Enthought/Canopy_64bit/User/bin/python
+
 import numpy as np
 import pylab as pl
 import os
