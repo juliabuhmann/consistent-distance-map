@@ -49,7 +49,7 @@ if __name__ == "__main__":
     tmp_files = args.temporary_folder
     fnOutput = args.output_file
     
-    SQUARE_SIZE = args.size
+    SQUARE_SIZE = args.size if args.size != None else 24
     SQUARE_SIZE_X = args.sx if args.sx != None else SQUARE_SIZE
     SQUARE_SIZE_Y = args.sy if args.sy != None else SQUARE_SIZE
     
