@@ -504,7 +504,6 @@ int graph_cut3D_VCE(std::string input, std::string output)
     }
 
 
-    printf(line.c_str());
     if (strncmp(line.c_str(), "binaries", strlen("binaries")) == 0){
         std::getline(infile, line);
         iss.clear();//clear any bits set
@@ -562,17 +561,18 @@ int graph_cut3D_VCE(std::string input, std::string output)
     iss.clear();//clear any bits set
     iss.str(std::string());
     iss.str(line);
-    printf("%d, %d, %d\n", shape_weights[0], shape_weights[1], shape_weights[2]);
+    
+    //~ printf("%d, %d, %d\n", shape_weights[0], shape_weights[1], shape_weights[2]);
+    
     for(int i = 0; i < shape_weights[0]; ++i)
         for(int j = 0; j < shape_weights[1]; ++j)
             for(int k = 0; k < shape_weights[2]; ++k){
                 iss >> weights[i][j][k];
-                printf("%d",weights[i][j][k]);
             }
                 
-    printf("Prediction: ");
-    printf(line.c_str());
-    printf("\n");
+    //~ printf("Prediction: ");
+    //~ printf(line.c_str());
+    //~ printf("\n");
                     
     
     
@@ -1206,10 +1206,10 @@ int main(int argc, char* argv[])
     switch (dims)
     {
         case 4:
-            return graph_cut3D_VCE(input, output);
+            return graph_cut3D(input, output);
             break;
         case 3:
-            return graph_cut3D_VCE(input, output);
+            return graph_cut3D(input, output);
             break;
         default:
             return 1;

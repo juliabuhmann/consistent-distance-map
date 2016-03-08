@@ -503,9 +503,9 @@ def get_graph_cut_output(output_file, shape):
 def reconstruct_surface(image, path_graph, path_output, C_prog, max_dist=None, sampling=None, overwrite=False, clipping_dist=4, cost_fun=None, verbose=False, binaries=None):
     
     if binaries is None:
-        shape = prepare_problem_VCE(image, path_graph, max_dist=max_dist, sampling=sampling, overwrite=overwrite, clipping_dist=clipping_dist, cost_fun=cost_fun)
+        shape = prepare_problem(image, path_graph, max_dist=max_dist, sampling=sampling, overwrite=overwrite, clipping_dist=clipping_dist, cost_fun=cost_fun)
     else:
-        shape = prepare_problem_VCE(image, path_graph, max_dist=max_dist, sampling=sampling, overwrite=overwrite, clipping_dist=clipping_dist, cost_fun=cost_fun, binaries=binaries)
+        shape = prepare_problem(image, path_graph, max_dist=max_dist, sampling=sampling, overwrite=overwrite, clipping_dist=clipping_dist, cost_fun=cost_fun, binaries=binaries)
     
     call_graph_cut(path_graph, path_output, C_prog, verbose=verbose)
     
