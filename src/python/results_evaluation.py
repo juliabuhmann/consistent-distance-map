@@ -33,7 +33,15 @@ import resource
 import validate_distance_maps as vdm
 
 
-
+class bcolors:
+    HEADER = '\033[95m'
+    OKBLUE = '\033[94m'
+    OKGREEN = '\033[92m'
+    WARNING = '\033[93m'
+    FAIL = '\033[91m'
+    ENDC = '\033[0m'
+    BOLD = '\033[1m'
+    UNDERLINE = '\033[4m'
 
 def score(image, ground_truth, score='L1'):
     '''
@@ -207,7 +215,7 @@ def plot_histogram(values, ground_truth, max_dist):
     plt.title('2d histogram of distance to membrane results')
     plt.show()
 
-def compare_scores(ground_truth, predictions, titles):
+def compare_scores(ground_truth, predictions, titles, seg_scores=None, dist_scores=None):
     
     if isinstance(titles, str):
         
@@ -226,16 +234,93 @@ def compare_scores(ground_truth, predictions, titles):
     assert len(predictions) == len(titles)
     
     
+    if seg_scores is None and dist_scores is None:
+        
+        seg_scores = ['L1','CC_VI','perc']
+        
+        dist_scores = ['L1','L2','VI','perc']
     
-    print "\t\t----------------------"
-    print '\033[1m' + "\t\t\tSCORES" + '\033[0m'
-    print "\t\t----------------------\n"
+    score_names = {'L1':'L1 Error',
+                   'L2':'L2 Error',
+                   'CC_VI':'Var of Info on CC',
+                   'VI':'Variation of Info',
+                   'perc':'% correct values'}
     
-    for prediction, title in zip(predictions, titles):
-        print_scores(ground_truth, prediction, title=title)
-        print "\n"
+    print "\n\n"
+    print "".join([' ']*int((WIDTH-22)*0.5)) + "######################"
+    print "".join([' ']*int((WIDTH-22)*0.5)) + '\033[1m' + "#       SCORES       #" + '\033[0m'
+    print "".join([' ']*int((WIDTH-22)*0.5)) + "######################\n"
+    
+    
+    if len(titles) > 3: # Won't fit in a table
+        for prediction, title in zip(predictions, titles):
+            print_scores(ground_truth, prediction, title=title)
+            print "\n"
+    
+    else:
+        width = np.maximum(WIDTH_SCORE,int(WIDTH*1./(len(titles)+1)))
+        
+        print_title_bar(titles, width=width, flag=bcolors.BOLD)
+        
+        print_hbar('-')
+        print_title_bar(['Threshold, Score']*len(predictions),'Segmentation', width=width, flag=bcolors.WARNING)
+        for score_ in seg_scores:
+            scores = []
+            thresholds = []
+            for prediction in predictions:
+                S,T = best_thresh(prediction, ground_truth, score_func=score_)
+                scores.append(S)
+                thresholds.append(T)
+            
+            values = [str(t) + ', ' + str(s) for t,s in zip(thresholds,scores)]
+            
+            print_title_bar(values,score_names[score_], width=width)    
+            
+            
+                
+                
+        print_hbar('-')
+        print_title_bar(['Score']*len(predictions),'Distances', width=width, flag=bcolors.WARNING)
+        for score_ in dist_scores:
+            scores = []
+            thresholds = []
+            for prediction in predictions:
+                scores.append(score(prediction,ground_truth,score_))
+            
+            values = [str(s) for s in scores]    
+            print_title_bar(values,score_names[score_], width=width)      
+        
         
     
+    #~ for prediction, title in zip(predictions, titles):
+        #~ print_scores(ground_truth, prediction, title=title)
+        #~ print "\n"
+
+WIDTH = 80
+WIDTH_SCORE = 20
+
+def print_title_bar(titles,first_col=' ',width=WIDTH_SCORE, flag=None, fmt_first = False):
+    
+    if flag is None or fmt_first:
+        fmt_titles = [title if len(title) <= width-2 else title[:width-2] for title in titles]
+    else:
+        fmt_titles = [flag + title + bcolors.ENDC if len(title) <= width-2 else title[:width-2] for title in titles]
+    
+    ls = [width-len(title) if flag is None else width-len(title)+len(flag)+len(bcolors.ENDC) for title in fmt_titles]
+    
+    fmt_title = [title.ljust(len(title)+int(0.5*l)) for title,l in zip(fmt_titles,ls)]
+    
+    fmt_title = [title.rjust(width) if flag is None else title.rjust(width+len(flag)+len(bcolors.ENDC)) for title in fmt_titles]
+    
+    if flag is None:
+        print first_col + ' '.ljust(width-len(first_col)) +  ''.join(fmt_title)
+    else:
+        print flag + first_col + bcolors.ENDC + ' '.ljust(width-len(first_col)) +  ''.join(fmt_title)
+    
+    
+def print_hbar(char='-',width=WIDTH):
+    
+    print ''.join([char]*width)
     
     
 def print_scores(ground_truth, estimate, title='Prediction'):
