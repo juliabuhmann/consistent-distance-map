@@ -13,7 +13,9 @@ sys.path.append(os.path.join(ROOT_PATH,'src','python'))
 
 import validate_distance_maps as vdm
 import surface_reconstruction as sr
+import results_evaluation as evaluate
 reload(sr)
+reload(evaluate)
 import argparse
 
 parser = argparse.ArgumentParser(description='Constrain distance map gradients by using Graph-Cut.')
@@ -101,9 +103,10 @@ if __name__ == "__main__":
     # cost_function = 'weighted'
     cost_function = 'weighted_asymmetric'
     # cost_function = my_cost_function
-    out = sr.reconstruct_surface(predicted_distances[square_slice], tmp_file1,tmp_file2,prog,overwrite=True, max_dist=max_dist, sampling = [1,1], cost_fun=cost_function, verbose=VERBOSE)
-
     
+    
+    out = sr.reconstruct_surface_VCE(predicted_distances[square_slice], tmp_file1,tmp_file2,prog,overwrite=True, max_dist=max_dist, sampling = [1,1], cost_fun=cost_function, verbose=VERBOSE)
+
     # save result as tiff
     imsave(fnOutput, out.astype(np.float32))
 
@@ -111,7 +114,7 @@ if __name__ == "__main__":
     
     
     if PRINTING:
-        sr.print_scores(true_distances[square_slice], predicted_distances[square_slice], out)
+        evaluate.compare_scores(true_distances[square_slice], [predicted_distances[square_slice], out], ["Regressor Prediction", "Smoothed Prediction"])
     
     
     
@@ -256,6 +259,7 @@ if __name__ == "__main__":
         pl.title('2d histogram of noisy distance')
         
         n_binsY = np.max(results)-np.min(results)
+        
         pl.subplot(1,2,2)
         pl.hist2d(labels, results, (n_binsX, n_binsY), cmap=pl.cm.jet, norm=pl.mpl.colors.LogNorm())
         pl.xlabel('ground truth')
