@@ -1,3 +1,4 @@
+# -*- coding: utf-8 -*-
 # Author: Florian Jug <jug@mpi-cbg.de>
 
 import sys
@@ -19,10 +20,12 @@ from sklearn.externals import joblib
 
 from skimage import measure
 from skimage import filters
+from skimage import feature
+from skimage import morphology
 
 
 def computeDetections( imgD, threshold, lessEqual=True ):
-    """Threshold given image and return the COM of each connected component.
+    """Thresholds given image and return the COM of each connected component.
     """
     if lessEqual:
         imgT = imgD<=threshold
@@ -38,6 +41,23 @@ def computeDetections( imgD, threshold, lessEqual=True ):
         centroids.append(prop.centroid)
 
     return centroids, imgT
+
+
+def computeDetectionsAtMinima( imgD, threshold, kappa=1, min_component_size=0 ):
+    """Thresholds given image and returns all local minima spaced further apart than κ.
+    """
+    imgT = imgD*(-1)+imgD.max()
+    imgT = filters.gaussian_filter(imgT/imgT.max(), sigma=1.2)
+    imgT[imgD>threshold]=0
+
+    # remove small crap if wanted
+    if min_component_size>0:
+        labels = measure.label(np.array(imgT>0, np.int8), background=0)
+        labels = morphology.remove_small_objects(labels+1, min_size=min_component_size)
+        imgT[labels==0]=0
+
+    peaks = feature.peak_local_max( imgT, min_distance=kappa, threshold_abs=0.0005, exclude_border=False, indices=True )
+    return peaks, imgT
 
 
 def matchDetections( detections, gtDetections, maxMatchingDist ):
@@ -92,10 +112,12 @@ PLOT = False
 maxMatchingDist = 6
 thresholdRange = range(1,12)
 
-pathRegressionImages = '/Users/jug/ownCloud/ProjectRegSeg/data/Histological/ICPR_Lymphocytes/predictions_ALL'
-pathSmoothedImages = '/Users/jug/ownCloud/ProjectRegSeg/data/Histological/ICPR_Lymphocytes/smoothed_ALL'
+pathRawImages = '/Users/jug/ownCloud/ProjectRegSeg/data/Histological/ICPR_Lymphocytes/data'
+pathRegressionImages = '/Users/jug/ownCloud/ProjectRegSeg/data/Histological/ICPR_Lymphocytes/predictions_ALL_more01_lossLAD'
+pathSmoothedImages = '/Users/jug/ownCloud/ProjectRegSeg/data/Histological/ICPR_Lymphocytes/smoothed_ALL_more01_lossLAD'
 pathGtDetectionImages = '/Users/jug/ownCloud/ProjectRegSeg/data/Histological/ICPR_Lymphocytes/ground_truth'
 
+fnRawImages = [ os.path.join(pathRawImages, fn) for fn in os.listdir(pathRawImages) if fn.endswith('.tif') ]
 fnRegressionImages = [ os.path.join(pathRegressionImages, fn) for fn in os.listdir(pathRegressionImages) if fn.endswith('.tif') ]
 fnSmoothedImages = [ os.path.join(pathSmoothedImages, fn) for fn in os.listdir(pathSmoothedImages) if fn.endswith('.tif') ]
 fnGtDetectionImages = [ os.path.join(pathGtDetectionImages, fn) for fn in os.listdir(pathGtDetectionImages) if fn.endswith('.tif') ]
@@ -111,35 +133,50 @@ for threshold in thresholdRange:
     NM_S = 0
     for i, fnR in enumerate(fnRegressionImages[0:]):
         imgR = imread(fnR)
-        detectionsR, imgRT = computeDetections( imgR, threshold )
+        # detectionsR, imgRT = computeDetections( imgR, threshold )
+        detectionsR, imgRT = computeDetectionsAtMinima( imgR, 6, kappa=threshold, min_component_size=6 )
 
         fnS = fnSmoothedImages[i]
         imgS = imread(fnS)
-        detectionsS, imgST = computeDetections( imgS, threshold )
+        # detectionsS, imgST = computeDetections( imgS, threshold )
+        detectionsS, imgST = computeDetectionsAtMinima( imgS, 6, kappa=threshold, min_component_size=6 )
 
         fnG = fnGtDetectionImages[i]
         imgG = imread(fnG)[:,:,1] # GT is brainfucked, being RGB, havind detections in green channel
         gtDetections, imgD = computeDetections( imgG, 0.5, lessEqual=False )
 
+        fnI = fnRawImages[i]
+        imgI = imread(fnI) #[:,:,1]
+
         TPi, FPi, NMi = matchDetections( detectionsR, gtDetections, maxMatchingDist )
         TP_R += TPi
         FP_R += FPi
         NM_R += NMi
-        
+
         TPi, FPi, NMi = matchDetections( detectionsS, gtDetections, maxMatchingDist )
         TP_S += TPi
         FP_S += FPi
         NM_S += NMi
 
-        if PLOT or threshold==3:
-            pl.subplot(2,2,1)
+        if PLOT or (threshold==4 and i==1):
+            dR = [detectionsR[:,i] for i in range(2)]
+            imgRT[dR[0],dR[1]]=-2
+            dS = [detectionsS[:,i] for i in range(2)]
+            imgST[dS[0],dS[1]]=-2
+            pl.subplot(2,3,1)
             pl.imshow(imgR, interpolation='nearest')
-            pl.subplot(2,2,2)
-            pl.imshow(imgRT+2*imgD, interpolation='nearest')
-            pl.subplot(2,2,3)
+            pl.subplot(2,3,2)
+            pl.imshow(imgRT+5*imgD, interpolation='nearest')
+            pl.subplot(2,3,3)
+            pl.imshow(imgI, interpolation='nearest')
+
+            pl.subplot(2,3,4)
             pl.imshow(imgS, interpolation='nearest')
-            pl.subplot(2,2,4)
-            pl.imshow(imgST+2*imgD, interpolation='nearest')
+            pl.subplot(2,3,5)
+            pl.imshow(imgST+5*imgD, interpolation='nearest')
+            pl.subplot(2,3,6)
+            pl.imshow(imgI, interpolation='nearest')
+
             pl.show()
 
     print 'Threshold: ', threshold, ' ',
