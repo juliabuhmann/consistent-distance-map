@@ -11,6 +11,19 @@ from subprocess import call, STDOUT
 import validate_distance_maps as vdm
 reload(vdm)
 
+
+class bcolors:
+    HEADER = '\033[95m'
+    OKBLUE = '\033[94m'
+    OKGREEN = '\033[92m'
+    WARNING = '\033[93m'
+    FAIL = '\033[91m'
+    ENDC = '\033[0m'
+    BOLD = '\033[1m'
+    UNDERLINE = '\033[4m'
+
+
+
 def prepare_problem(distance_map, path_output, max_dist=None, sampling=None, overwrite=False, cost_fun='lin_clipped',clipping_dist=4):
     '''
     # Parameters
@@ -140,7 +153,6 @@ def prepare_problem(distance_map, path_output, max_dist=None, sampling=None, ove
         augmented_shape = shape + [column_height]
         # Graph shape is image shape + one dimension the size of a column.
 
-
         
         ### Write number of nodes, maximal distance, number of dimensions, the shape of the nodes in the graph and the shape of the neighborhood structure.
         
@@ -240,6 +252,23 @@ def prepare_problem_VCE(distance_map, path_output, max_dist=None, sampling=None,
     n_dims = len(shape)
     
     
+    if distance_map.dtype != np.int:
+        print bcolors.WARNING + "Distance map is not integer. Rounding values." + bcolors.ENDC
+        distance_map = np.round(distance_map).astype(np.int)
+    
+    if np.min(distance_map) < 0:
+        print bcolors.WARNING + "Negative values found in distance map. Clipping them to 0." + bcolors.ENDC
+        distance_map = np.maximum(distance_map,0)
+        
+    if max_dist == None:
+        max_dist = int(np.max(distance_map))
+        print bcolors.WARNING + "Max distance not defined. Using " + str(max_dist) + "."  + bcolors.ENDC
+    
+    if np.min(distance_map) < 0:
+        print bcolors.WARNING + "Values over maximal distance (" + str(max_dist) + ") found. Clipping them to " + str(max_dist) + "." + bcolors.ENDC
+        distance_map = np.maximum(distance_map,0)
+        
+    
     if sampling != None:
         assert len(sampling) == len(shape)
         assert min(sampling) >= 1
@@ -254,9 +283,6 @@ def prepare_problem_VCE(distance_map, path_output, max_dist=None, sampling=None,
     else:
         return_2D = False
 
-    if max_dist == None:
-        max_dist = int(np.max(distance_map))
-        print "Max distance not defined. Using " + str(max_dist) + "." 
     
     if cost_fun is None:
         cost_fun='lin_clipped'
@@ -322,7 +348,6 @@ def prepare_problem_VCE(distance_map, path_output, max_dist=None, sampling=None,
         augmented_shape = shape + [column_height]
         # Graph shape is image shape + one dimension the size of a column.
 
-
         
         ### Write number of nodes, maximal distance, number of dimensions, the shape of the nodes in the graph and the shape of the neighborhood structure.
         
@@ -330,6 +355,7 @@ def prepare_problem_VCE(distance_map, path_output, max_dist=None, sampling=None,
         n_dimensions = len(augmented_shape)
         
         f_out.write("# n_nodes, max_dist, dims, shape_weights, shape_neighborhood\n")
+        
         f_out.write(" ".join([str(n_nodes),str(max_dist),str(n_dimensions)] + [str(el) for el in augmented_shape] + [str(el) for el in structure.shape]))
         f_out.write("\n#\n")
 
@@ -345,6 +371,7 @@ def prepare_problem_VCE(distance_map, path_output, max_dist=None, sampling=None,
         ### Write terminal edge weights into the file.
         
         unaries = compute_weights(np.array(range(max_dist+1)), max_dist, cost_fun=cost_fun, clipping_dist=clipping_dist)
+        
         unaries = np.concatenate((unaries[:,0:1], np.diff(unaries,axis=-1)), axis=-1)
         
         
@@ -370,6 +397,7 @@ def prepare_problem_VCE(distance_map, path_output, max_dist=None, sampling=None,
         f_out.write("\n#\n")    
 
     f_out.close()
+    print "\n"
     return augmented_shape
 
 
@@ -505,7 +533,7 @@ def reconstruct_surface(image, path_graph, path_output, C_prog, max_dist=None, s
     if binaries is None:
         shape = prepare_problem(image, path_graph, max_dist=max_dist, sampling=sampling, overwrite=overwrite, clipping_dist=clipping_dist, cost_fun=cost_fun)
     else:
-        shape = prepare_problem(image, path_graph, max_dist=max_dist, sampling=sampling, overwrite=overwrite, clipping_dist=clipping_dist, cost_fun=cost_fun, binaries=binaries)
+        shape = prepare_problem_VCE(image, path_graph, max_dist=max_dist, sampling=sampling, overwrite=overwrite, clipping_dist=clipping_dist, cost_fun=cost_fun, binaries=binaries)
     
     call_graph_cut(path_graph, path_output, C_prog, verbose=verbose)
     
@@ -798,12 +826,21 @@ def test(image, path_graph, path_output, C_prog, max_dist=None):
     pl.plot(sizes,times,'o')
 
 
-def solve_via_ILP(weights, max_gradient=1):
+
+
+
+
+def solve_via_ILP(weights, max_gradient=1, enforce_minimum=False, num_cores=None):
     try:
+        if os.path.exists('/data/owncloud/MinCutForDistance/pysurfrec/build/python'):
+            sys.path.append('/data/owncloud/MinCutForDistance/pysurfrec/build/python')
         import surfrec
+            
     except ImportError, e:
         print "Module pysurfrec not found. Make sure you installed it correctly and that it is in your python path."
         raise e
+    
+    
     
     
     
@@ -814,6 +851,9 @@ def solve_via_ILP(weights, max_gradient=1):
     full_shape = weights.shape
     n_dims = len(shape)
     
+    if isinstance(max_gradient,int):
+        max_gradient = [max_gradient for _ in range(n_dims)]
+    
     num_nodes = int(np.prod(shape))
     num_edges = int(sum([np.prod(shape[:i])*np.prod(shape[i+1:])*(shape[i]-1) for i in range(n_dims) ]))
 
@@ -821,7 +861,18 @@ def solve_via_ILP(weights, max_gradient=1):
 
     # "Instantiating solver"
     print "Max gradient:", max_gradient
-    s = surfrec.IlpSolver(num_nodes, num_nodes - 1, num_levels, max_gradient)
+    s = surfrec.IlpSolver(num_nodes, num_nodes - 1, num_levels, max_gradient[0])
+
+    p = surfrec.IlpSolverParameters()
+    p.enforce_zero_minimum = enforce_minimum
+    p.num_neighbors = 2*n_dims
+    if not num_cores is None:
+        p.num_threads = num_cores
+        
+
+
+
+
 
     #print "Adding nodes"
     first = s.add_nodes(num_nodes)
@@ -838,7 +889,7 @@ def solve_via_ILP(weights, max_gradient=1):
             if all(neigh < shape) and all(neigh >= 0):
                 i_neigh = np.ravel_multi_index(neigh,shape)
                 #print str(i) + ": Linking level " + str(coords) + " to " +str(neigh) + "."
-                s.add_edge(nodes[coords], nodes[tuple(neigh)])
+                s.add_edge(nodes[coords], nodes[tuple(neigh)], max_gradient[dim])
                 
                 
     print "Adding level costs for the " + str(num_nodes) + " nodes."
@@ -849,44 +900,11 @@ def solve_via_ILP(weights, max_gradient=1):
             costs[j] = weights[tuple(coords + [j])];
         s.set_level_costs(nodes[tuple(coords)], costs);
 
-        #~ coords = np.unravel_index(i,full_shape)
-        #~ height = coords[-1]
-        #~ if height == 0:
-            #~ for dim in range(n_dims):
-                #~ neigh = coords + np.array([1 if i == dim else 0 for i in range(n_dims)] + [height])
-                #~ if all(neigh < full_shape) and all(neigh > 0):
-                    #~ i_neigh = np.ravel_multi_index(neigh,full_shape)
-                    #~ s.add_edge(nodes[coords], nodes[neigh])
-                #~ neigh = coords + np.array([-1 if i == dim else 0 for i in range(n_dims)] + [height])
-                #~ if all(neigh < full_shape) and all(neigh > 0):
-                    #~ i_neigh = np.ravel_multi_index(neigh,full_shape)
-                    #~ s.add_edge(nodes[coords], nodes[neigh])
-        #~ else:
-            #~ for dim in range(n_dims):
-                #~ neigh = coords + np.array([1 if i == dim else 0 for i in range(n_dims)] + [height-1])
-                #~ if all(neigh < full_shape) and all(neigh > 0):
-                    #~ i_neigh = np.ravel_multi_index(neigh,full_shape)
-                    #~ s.add_edge(nodes[coords], nodes[neigh])
-                #~ neigh = coords + np.array([-1 if i == dim else 0 for i in range(n_dims)] + [height-1])
-                #~ if all(neigh < full_shape) and all(neigh > 0):
-                    #~ i_neigh = np.ravel_multi_index(neigh,full_shape)
-                    #~ s.add_edge(nodes[coords], nodes[neigh])
-            #~ neigh = coords + np.array([0 for _ in range(n_dims)] + [height-1])
-            #~ i_neigh = np.ravel_multi_index(neigh,full_shape)    
-            #~ s.add_edge(nodes[coords], nodes[neigh])
 
-    #~ print "Adding level costs"
-    #~ weights.reshape(num_nodes,num_levels)
-    #~ for i in range(num_nodes):
-        #~ coords = np.unravel_index(i,full_shape)
-        #~ costs = surfrec.ColumnCosts(num_levels)
-        #~ for j in range(num_levels):
-            #~ costs[j] = weights[i,j];
-        #~ s.set_level_costs(nodes[coords], costs);
 
     print "Solving"
     t0 = time()
-    value = s.min_surface()
+    value = s.min_surface(p)
     print "Solution found in", time()-t0, "seconds."
 
 
