@@ -113,8 +113,8 @@ maxMatchingDist = 6
 thresholdRange = range(1,12)
 
 pathRawImages = '/Users/jug/ownCloud/ProjectRegSeg/data/Histological/ICPR_Lymphocytes/data'
-pathRegressionImages = '/Users/jug/ownCloud/ProjectRegSeg/data/Histological/ICPR_Lymphocytes/predictions_ALL_more01_lossLAD'
-pathSmoothedImages = '/Users/jug/ownCloud/ProjectRegSeg/data/Histological/ICPR_Lymphocytes/smoothed_ALL_more01_lossLAD'
+pathRegressionImages = '/Users/jug/ownCloud/ProjectRegSeg/data/Histological/ICPR_Lymphocytes/predictions_ALL'
+pathSmoothedImages = '/Users/jug/ownCloud/ProjectRegSeg/data/Histological/ICPR_Lymphocytes/smoothed_ALL'
 pathGtDetectionImages = '/Users/jug/ownCloud/ProjectRegSeg/data/Histological/ICPR_Lymphocytes/ground_truth'
 
 fnRawImages = [ os.path.join(pathRawImages, fn) for fn in os.listdir(pathRawImages) if fn.endswith('.tif') ]
@@ -134,12 +134,12 @@ for threshold in thresholdRange:
     for i, fnR in enumerate(fnRegressionImages[0:]):
         imgR = imread(fnR)
         # detectionsR, imgRT = computeDetections( imgR, threshold )
-        detectionsR, imgRT = computeDetectionsAtMinima( imgR, 6, kappa=threshold, min_component_size=6 )
+        detectionsR, imgRT = computeDetectionsAtMinima( imgR, 6, kappa=threshold, min_component_size=10 )
 
         fnS = fnSmoothedImages[i]
         imgS = imread(fnS)
         # detectionsS, imgST = computeDetections( imgS, threshold )
-        detectionsS, imgST = computeDetectionsAtMinima( imgS, 6, kappa=threshold, min_component_size=6 )
+        detectionsS, imgST = computeDetectionsAtMinima( imgS, 6, kappa=threshold, min_component_size=10 )
 
         fnG = fnGtDetectionImages[i]
         imgG = imread(fnG)[:,:,1] # GT is brainfucked, being RGB, havind detections in green channel
