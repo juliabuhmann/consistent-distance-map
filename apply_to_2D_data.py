@@ -114,7 +114,14 @@ if __name__ == "__main__":
     
     
     if PRINTING:
-        evaluate.compare_scores(true_distances[square_slice], [predicted_distances[square_slice], out], ["Regressor Prediction", "Smoothed Prediction"])
+        # Try one of these:
+        fmt_best = 'green'
+        #~ fmt_best = 'red'
+        #~ fmt_best = 'yellow'
+        #~ fmt_best = 'blue'
+        #~ fmt_best = 'bold'
+        
+        evaluate.compare_scores(true_distances[square_slice], [predicted_distances[square_slice], out], ["Regressor Prediction", "Smoothed Prediction"],format_best_score=fmt_best)
     
     
     

@@ -215,7 +215,7 @@ def plot_histogram(values, ground_truth, max_dist):
     plt.title('2d histogram of distance to membrane results')
     plt.show()
 
-def compare_scores(ground_truth, predictions, titles, seg_scores=None, dist_scores=None):
+def compare_scores(ground_truth, predictions, titles, seg_scores=None, dist_scores=None, format_best_score='Green'):
     
     if isinstance(titles, str):
         
@@ -234,6 +234,22 @@ def compare_scores(ground_truth, predictions, titles, seg_scores=None, dist_scor
     assert len(predictions) == len(titles)
     
     
+    
+    if isinstance(format_best_score,str):
+        if format_best_score.lower() == 'green':
+            fmt_best = bcolors.OKGREEN
+        elif format_best_score.lower() == 'blue':
+            fmt_best = bcolors.OKBLUE
+        elif format_best_score.lower() == 'red':
+            fmt_best = bcolors.FAIL
+        elif format_best_score.lower() == 'yellow':
+            fmt_best = bcolors.WARNING
+        elif format_best_score.lower() == 'bold':
+            fmt_best = bcolors.BOLD
+        elif format_best_score.lower() == 'underline':
+            fmt_best = bcolors.UNDERLINE
+    
+    
     if seg_scores is None and dist_scores is None:
         
         seg_scores = ['L1','CC_VI','perc']
@@ -245,6 +261,12 @@ def compare_scores(ground_truth, predictions, titles, seg_scores=None, dist_scor
                    'CC_VI':'Var of Info on CC',
                    'VI':'Variation of Info',
                    'perc':'% correct values'}
+                   
+    best_score =  {'L1':np.argmin,
+                   'L2':np.argmin,
+                   'CC_VI':np.argmin,
+                   'VI':np.argmin,
+                   'perc':np.argmax}
     
     print "\n\n"
     print "".join([' ']*int((WIDTH-22)*0.5)) + "######################"
@@ -272,9 +294,9 @@ def compare_scores(ground_truth, predictions, titles, seg_scores=None, dist_scor
                 scores.append(S)
                 thresholds.append(T)
             
-            values = [str(t) + ', ' + str(s) for t,s in zip(thresholds,scores)]
+            values = ['%d, %.4f' % (t,s) for t,s in zip(thresholds,scores)]
             
-            print_title_bar(values,score_names[score_], width=width)    
+            print_title_bar(values,score_names[score_], width=width, bold_ind=best_score[score_](scores), fmt_best=fmt_best)    
             
             
                 
@@ -287,8 +309,9 @@ def compare_scores(ground_truth, predictions, titles, seg_scores=None, dist_scor
             for prediction in predictions:
                 scores.append(score(prediction,ground_truth,score_))
             
-            values = [str(s) for s in scores]    
-            print_title_bar(values,score_names[score_], width=width)      
+            values = ['%.4f' % s for s in scores]
+            
+            print_title_bar(values,score_names[score_], width=width, bold_ind=best_score[score_](scores), fmt_best=fmt_best)      
         
         
     
@@ -299,7 +322,7 @@ def compare_scores(ground_truth, predictions, titles, seg_scores=None, dist_scor
 WIDTH = 80
 WIDTH_SCORE = 20
 
-def print_title_bar(titles,first_col=' ',width=WIDTH_SCORE, flag=None, fmt_first = False):
+def print_title_bar(titles,first_col=' ',width=WIDTH_SCORE, flag=None, fmt_first = False, bold_ind=None, fmt_best=bcolors.OKGREEN):
     
     if flag is None or fmt_first:
         fmt_titles = [title if len(title) <= width-2 else title[:width-2] for title in titles]
@@ -311,6 +334,9 @@ def print_title_bar(titles,first_col=' ',width=WIDTH_SCORE, flag=None, fmt_first
     fmt_title = [title.ljust(len(title)+int(0.5*l)) for title,l in zip(fmt_titles,ls)]
     
     fmt_title = [title.rjust(width) if flag is None else title.rjust(width+len(flag)+len(bcolors.ENDC)) for title in fmt_titles]
+    
+    if not bold_ind is None:
+        fmt_title = [f if i != bold_ind else fmt_best + f + bcolors.ENDC for i,f in enumerate(fmt_title)]
     
     if flag is None:
         print first_col + ' '.ljust(width-len(first_col)) +  ''.join(fmt_title)
