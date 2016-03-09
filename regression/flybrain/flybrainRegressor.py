@@ -15,7 +15,7 @@ max_dist = 15
 max_training_size = 10000000  # Upper bound on the number of samples used for training.
 
 
-ROOT_DATA = '/data/owncloud/ProjectRegSeg/data/' # Set to your local path
+ROOT_DATA = '/Users/abouchar/owncloud/ProjectRegSeg/data/' # Set to your local path
 
 training_set = range(1,9)  # Indices of images to use for training.
 
@@ -29,7 +29,7 @@ elif learner is GradientBoostingRegressor:
 else:
     learner_params = {}
     
-n_features = 61
+n_features = 121
 
 TEST_REGRESSOR = False
 
@@ -89,8 +89,13 @@ if TEST_REGRESSOR:
         
         for features_img, dist_img in zip(training_feat, training_dist):
             count += 1
-            features = np.concatenate((features, imread(os.path.join(ROOT_FTR, features_img))),axis=0)
-            ground_truth = np.concatenate((ground_truth,np.minimum(imread(os.path.join(ROOT_GT, dist_img)),max_dist).flatten()))
+            features_to_add = imread(os.path.join(ROOT_FTR, features_img))
+            ground_truth_to_add = np.minimum(imread(os.path.join(ROOT_GT, dist_img)),max_dist).flatten()
+            
+            selected = np.logical_or(ground_truth_to_add < max_dist, np.random.rand(len(ground_truth_to_add)) < 0.05)
+            
+            features = np.concatenate((features, features_to_add[selected,:]),axis=0)
+            ground_truth = np.concatenate((ground_truth, ground_truth_to_add[selected]))
             
             if np.size(ground_truth) > max_training_size:
                 
@@ -163,12 +168,14 @@ if TEST_REGRESSOR:
 if TRAIN_ALL_LOO_REGRESSORS:
     
     for i in range(len(files_ftr)):
-    
+        if i > 0:
+            break
+            
         train_set = files_ftr[:i] + files_ftr[i+1:]
         ground_truth_set = files_gt[:i] + files_gt[i+1:]
         fn_prediction = files_ftr[i]
         
-        
+        count = 1
         for f,gt in zip(train_set, ground_truth_set):
             
             feat = imread(os.path.join(ROOT_FTR,f))
@@ -179,6 +186,13 @@ if TRAIN_ALL_LOO_REGRESSORS:
             feat = feat.reshape(np.prod(shape[:-1]),shape[-1])
             gr_tr = gr_tr.flatten()
             
+            
+            selected = np.logical_or(gr_tr < max_dist, np.random.rand(len(gr_tr)) < 0.05)
+            
+            
+            feat = feat[selected,:]
+            gr_tr = gr_tr[selected]
+            
             if 'features' in locals():
                 
                 features = np.concatenate((features,feat),axis=0)
@@ -188,7 +202,13 @@ if TRAIN_ALL_LOO_REGRESSORS:
                 
                 features = feat
                 ground_truth = gr_tr
+            
+            
+            print "Loading file " + str(count) + "/" + str(len(files_ftr)-1) + " : " + str(np.sum(selected)) + "/" + str(len(selected)) + " (" + str(int(100.*np.sum(selected)/len(selected))) +"%) samples added. Total # samples: " + str(len(ground_truth)) + "." 
+            
                 
+            count += 1
+            
             
         leftOut_nb = "%03d" % i
         learner_type = 'RF' if learner is RandomForestRegressor else 'GB'
