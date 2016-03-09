@@ -400,7 +400,7 @@ int graph_cut3D_VCE(std::string input, std::string output)
     for (int i=0; i<dims; i++)
         iss >> shape_weights[i];
         
-    printf("Building graph:\n    Number of nodes: %d\n    Maximal distance: %d\n    Graph dimensions: %dx%dx%dx%d\n",n_nodes, max_dist, shape_weights[0], shape_weights[1], shape_weights[2], max_dist);
+    printf("Building graph:\n    Number of nodes: %d\n    Maximal distance: %d\n    Graph dimensions: %dx%dx%dx%d\n",n_nodes, max_dist, shape_weights[0], shape_weights[1], shape_weights[2], (max_dist+1));
     
     
     
@@ -903,7 +903,7 @@ int graph_cut2D(std::string input, std::string output)
         
     printf("N_NODES: %d, %d, %d, dimensions: %d,%d,%d\n",n_nodes, max_dist, dims, shape_weights[0], shape_weights[1], shape_weights[2]);
     
-    
+    printf("%d,%d,%d", shape_weights[0], shape_weights[1], shape_weights[2]);
     
     int* shape_neigh = new int[dims];
     for (int i=0; i<dims; i++)
@@ -1206,10 +1206,10 @@ int main(int argc, char* argv[])
     switch (dims)
     {
         case 4:
-            return graph_cut3D(input, output);
+            return graph_cut3D_VCE(input, output);
             break;
         case 3:
-            return graph_cut3D(input, output);
+            return graph_cut3D_VCE(input, output);
             break;
         default:
             return 1;
