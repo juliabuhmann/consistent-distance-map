@@ -1,3 +1,4 @@
+# -*- coding: utf-8 -*-
 # Author: Florian Jug <jug@mpi-cbg.de>
 
 import sys
@@ -17,7 +18,7 @@ from tifffile import *
 import pylab
 from sklearn.externals import joblib
 
-def train( featureStackFilenames, groundTruthFilenames ):
+def train( featureStackFilenames, groundTruthFilenames, doClassEqualization=False ):
   assert len(featureStackFilenames)==len(groundTruthFilenames)
 
   for i,fnF in enumerate(featureStackFilenames):
@@ -38,8 +39,19 @@ def train( featureStackFilenames, groundTruthFilenames ):
 
     X_i = imF.reshape( (n_pixels, n_features) )
     y_i = imG.reshape( (n_pixels) )
-    
-    print y_i.size
+
+    # add 0 and 1 distances more then only one time
+    if doClassEqualization:
+        print y_i.size,
+        X_i_0 = X_i[y_i==0]
+        y_i_0 = y_i[y_i==0]
+        X_i_01 = X_i[y_i<=1]
+        y_i_01 = y_i[y_i<=1]
+        # raise Exception
+        X_i=np.concatenate( (X_i,np.concatenate( (X_i_01, X_i_0) ,axis=0)) ,axis=0)
+        y_i=np.concatenate( (y_i,np.concatenate( (y_i_01, y_i_0) ,axis=0)) ,axis=0)
+
+    print y_i.size,
 
     # filter out useless training data
     max_dist = y_i.max()
@@ -58,7 +70,7 @@ def train( featureStackFilenames, groundTruthFilenames ):
       y = y_i
 
   params = {'n_estimators': 500, 'max_depth': 4, 'min_samples_split': 1,
-            'learning_rate': 0.01, 'loss': 'ls', 'verbose': 3}
+            'learning_rate': 0.01, 'loss': 'lad', 'verbose': 3}
   clf = ensemble.GradientBoostingRegressor(**params)
   clf.fit(X, y)
   return clf, X, y
@@ -102,7 +114,7 @@ def log_done():
 log('START')
 PLOT = True
 
-filenameModel = 'regressorOnAllWithAll.pkl'
+filenameModel = 'regressorOnAllWithAll_more01_lossLAD.pkl'
 
 folderModels = '/Users/jug/ownCloud/ProjectRegSeg/data/Histological/ICPR_Lymphocytes/models/'
 folderPredict = '/Users/jug/ownCloud/ProjectRegSeg/data/Histological/ICPR_Lymphocytes/predictions/'
@@ -120,7 +132,7 @@ trainGtFiles = [ os.path.join(folderGtTrain, fn) for fn in os.listdir(folderGtTr
 
 # -- TRAIN -- TRAIN -- TRAIN -- TRAIN -- TRAIN -- TRAIN -- TRAIN -- TRAIN -- 
 log_start( 'Start training... ' )
-clf = train(trainFeatureFiles,trainGtFiles)
+clf = train(trainFeatureFiles,trainGtFiles,doClassEqualization=True)
 log_done()
 log_start( 'Start writing model to "'+folderModels+filenameModel+'"... ' )
 joblib.dump(clf, folderModels+filenameModel)
