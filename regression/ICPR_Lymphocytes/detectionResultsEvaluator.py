@@ -113,8 +113,15 @@ maxMatchingDist = 6
 thresholdRange = range(1,12)
 
 pathRawImages = '/Users/jug/ownCloud/ProjectRegSeg/data/Histological/ICPR_Lymphocytes/data'
-pathRegressionImages = '/Users/jug/ownCloud/ProjectRegSeg/data/Histological/ICPR_Lymphocytes/predictions_ALL'
-pathSmoothedImages = '/Users/jug/ownCloud/ProjectRegSeg/data/Histological/ICPR_Lymphocytes/smoothed_ALL'
+# pathRegressionImages = '/Users/jug/ownCloud/ProjectRegSeg/data/Histological/ICPR_Lymphocytes/predictions_ALL'
+# pathSmoothedImages = '/Users/jug/ownCloud/ProjectRegSeg/data/Histological/ICPR_Lymphocytes/smoothed_ALL'
+
+# pathRegressionImages = '/Users/jug/ownCloud/ProjectRegSeg/data/Histological/ICPR_Lymphocytes/predictions_rfR_ALL'
+# pathSmoothedImages = '/Users/jug/ownCloud/ProjectRegSeg/data/Histological/ICPR_Lymphocytes/smoothed_rfR_ALL'
+
+pathRegressionImages = '/Users/jug/ownCloud/ProjectRegSeg/data/Histological/ICPR_Lymphocytes/predictions_rfR_noSparse_200trees'
+pathSmoothedImages = '/Users/jug/ownCloud/ProjectRegSeg/data/Histological/ICPR_Lymphocytes/smoothed_rfR_noSparse_200trees'
+
 pathGtDetectionImages = '/Users/jug/ownCloud/ProjectRegSeg/data/Histological/ICPR_Lymphocytes/ground_truth'
 
 fnRawImages = [ os.path.join(pathRawImages, fn) for fn in os.listdir(pathRawImages) if fn.endswith('.tif') ]
@@ -134,12 +141,12 @@ for threshold in thresholdRange:
     for i, fnR in enumerate(fnRegressionImages[0:]):
         imgR = imread(fnR)
         # detectionsR, imgRT = computeDetections( imgR, threshold )
-        detectionsR, imgRT = computeDetectionsAtMinima( imgR, 6, kappa=threshold, min_component_size=10 )
+        detectionsR, imgRT = computeDetectionsAtMinima( imgR, 5, kappa=threshold, min_component_size=10 )
 
         fnS = fnSmoothedImages[i]
         imgS = imread(fnS)
         # detectionsS, imgST = computeDetections( imgS, threshold )
-        detectionsS, imgST = computeDetectionsAtMinima( imgS, 6, kappa=threshold, min_component_size=10 )
+        detectionsS, imgST = computeDetectionsAtMinima( imgS, 5, kappa=threshold, min_component_size=10 )
 
         fnG = fnGtDetectionImages[i]
         imgG = imread(fnG)[:,:,1] # GT is brainfucked, being RGB, havind detections in green channel
@@ -158,7 +165,7 @@ for threshold in thresholdRange:
         FP_S += FPi
         NM_S += NMi
 
-        if PLOT or (threshold==4 and i==1):
+        if False: # and PLOT or (threshold==4 and i==1):
             dR = [detectionsR[:,i] for i in range(2)]
             imgRT[dR[0],dR[1]]=-2
             dS = [detectionsS[:,i] for i in range(2)]

@@ -75,7 +75,7 @@ def train( featureStackFilenames, groundTruthFilenames, doClassEqualization=Fals
   # clf.fit(X, y)
   # return clf, X, y
 
-  params = {'n_estimators': 200, 'max_depth': None, 'min_samples_split': 2,
+  params = {'n_estimators': 50, 'max_depth': None, 'min_samples_split': 2,
             'n_jobs': 8, 'verbose': 3}
   rfr = ensemble.RandomForestRegressor(**params)
   rfr.fit(X, y)
@@ -123,7 +123,7 @@ PLOT = True
 
 filenamePrefixModel = 'rfRegressorOnAll_noSparse_100trees_leave'
 
-folderModels = '/Users/jug/ownCloud/ProjectRegSeg/data/Histological/ICPR_Lymphocytes/models/'
+folderModels = '/Users/jug/ownCloud/ProjectRegSeg/data/Histological/ICPR_Lymphocytes/models/leaveOneOuts/'
 folderPredict = '/Users/jug/ownCloud/ProjectRegSeg/data/Histological/ICPR_Lymphocytes/predictions/'
 
 # ---------------------------------------------------------------------------------------
@@ -139,28 +139,28 @@ trainGtFiles = [ os.path.join(folderGtTrain, fn) for fn in os.listdir(folderGtTr
 
 # -- TRAIN -- TRAIN -- TRAIN -- TRAIN -- TRAIN -- TRAIN -- TRAIN -- TRAIN -- 
 for i in range(len(trainFeatureFiles)): # leave one out loop
-    log_start( 'Start training, leaving out '+str(i+1)+' of ' str(len(trainFeatureFiles)) +'... ' )
+    log_start( 'Start training, leaving out '+str(i+1)+' of '+str(len(trainFeatureFiles))+'... ' )
     regressor = train(
             trainFeatureFiles[:i]+trainFeatureFiles[(i+1):],
             trainGtFiles[:i]+trainGtFiles[(i+1):],
             doClassEqualization=True)
     log_done()
-    log_start( 'Start writing model to "'+folderModels+filenamePrefixModel+str(i)'"... ' )
+    log_start( 'Start writing model to "'+folderModels+filenamePrefixModel+str(i)+'"... ' )
     joblib.dump(regressor, folderModels+filenamePrefixModel+str(i)+'.pkl')
     log_done()
 
     # ---------------------------------------------------------------------------------------
     # TESTING TESTING TESTING TESTING TESTING TESTING TESTING TESTING TESTING TESTING TESTING
     # ---------------------------------------------------------------------------------------
+    testFeatureFiles = [ trainFeatureFiles[i] ]
     log_start( 'Start regressing... ' )
-    predImgs = regress( regressor, testFeatureFiles )
+    predImgs = regress( regressor[0], testFeatureFiles )
     log_done()
 
     # -- WRITE RESULTS -- WRITE RESULTS -- WRITE RESULTS -- WRITE RESULTS -- 
     log_start( 'Start writing results to "'+folderPredict+'"... ' )
-    for i,img in enumerate(predImgs):
-      imsave(folderPredict+'prediction'+str(i)+'.tif', img.astype(np.float32))
-      if PLOT:
-          pylab.imshow(img, interpolation='nearest')
-          pylab.show()
+    imsave(folderPredict+'prediction'+str(i)+'.tif', predImgs[0].astype(np.float32))
+    if PLOT:
+        pylab.imshow(predImgs[0], interpolation='nearest')
+        pylab.show()
     log_done()
