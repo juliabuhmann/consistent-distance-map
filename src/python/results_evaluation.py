@@ -55,7 +55,7 @@ def score(image, ground_truth, score='L1'):
         Array containing the true distance.
         
     score: string
-        One of 'L1', 'L2', 'VI', 'CC_VI'.
+        One of 'L1', 'L2', 'VI', 'CC_VI','TP','FP','TN','FN'.
         
     '''
     
@@ -98,6 +98,50 @@ def score(image, ground_truth, score='L1'):
     elif str.lower(score) in ['percentage', 'perc', 'p']:
         
         return vdm.calculate_perc_of_correct(ground_truth.astype(np.int), image.astype(np.int))*100    
+    
+    elif str.upper(score) == 'TP':
+        
+        return np.sum(np.logical_and(ground_truth==0,image==0)) 
+           
+    
+    elif str.upper(score) == 'FP':
+        
+        return np.sum(np.logical_and(ground_truth!=0,image==0))
+           
+    
+    elif str.upper(score) == 'TN':
+        
+        return np.sum(np.logical_and(ground_truth!=0,image!=0)) 
+           
+    
+    elif str.upper(score) == 'FN':
+        
+        return np.sum(np.logical_and(ground_truth==0,image!=0)) 
+    
+    elif str.upper(score) in ['P','PREC','PRECISION']:
+        
+        return float(np.sum(np.logical_and(ground_truth==0,image==0)))/np.sum(image==0)
+        
+    elif str.upper(score) in ['R','REC','RECALL', 'TPR']: # Recall or True Positive Rate
+        
+        return float(np.sum(np.logical_and(ground_truth==0,image==0)))/np.sum(ground_truth==0)
+        
+    elif str.upper(score) in ['FPR']: # False Positive Rate
+        
+        return float(np.sum(np.logical_and(ground_truth!=0,image==0)))/np.sum(ground_truth!=0)
+        
+    elif str.upper(score) in ['S','SPEC','SPECIFICITY','TNR']: # Specificity or True Negative Rate
+        
+        return float(np.sum(np.logical_and(ground_truth!=0,image!=0)))/np.sum(ground_truth!=0)
+        
+    elif str.upper(score) in ['FNR']: # False Negative Rate
+        
+        return float(np.sum(np.logical_and(ground_truth==0,image!=0)))/np.sum(ground_truth==0)
+        
+    elif str.upper(score) in ['A', 'ACCURACY']: # Accuracy
+        
+        return float(np.sum(ground_truth==image))/np.size(ground_truth)
+           
     else:
         
         raise Exception("Not recognized")
@@ -252,7 +296,7 @@ def compare_scores(ground_truth, predictions, titles, seg_scores=None, dist_scor
     
     if seg_scores is None and dist_scores is None:
         
-        seg_scores = ['L1','CC_VI','perc']
+        seg_scores = ['L1','CC_VI','perc','precision','recall']
         
         dist_scores = ['L1','L2','VI','perc']
     
@@ -260,13 +304,17 @@ def compare_scores(ground_truth, predictions, titles, seg_scores=None, dist_scor
                    'L2':'L2 Error',
                    'CC_VI':'Var of Info on CC',
                    'VI':'Variation of Info',
-                   'perc':'% correct values'}
+                   'perc':'% correct values',
+                   'precision':'Precision',
+                   'recall':'Recall'}
                    
     best_score =  {'L1':np.argmin,
                    'L2':np.argmin,
                    'CC_VI':np.argmin,
                    'VI':np.argmin,
-                   'perc':np.argmax}
+                   'perc':np.argmax,
+                   'precision':np.argmax,
+                   'recall':np.argmax}
     
     print "\n\n"
     print "".join([' ']*int((WIDTH-22)*0.5)) + "######################"
