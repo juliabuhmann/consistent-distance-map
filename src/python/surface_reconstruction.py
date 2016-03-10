@@ -251,7 +251,8 @@ def prepare_problem_VCE(distance_map, path_output, max_dist=None, sampling=None,
     
     n_dims = len(shape)
     
-    
+    R = np.copy(distance_map)
+    import pylab as pl
     if distance_map.dtype != np.int:
         print bcolors.WARNING + "Distance map is not integer. Rounding values." + bcolors.ENDC
         distance_map = np.round(distance_map).astype(np.int)
@@ -268,7 +269,11 @@ def prepare_problem_VCE(distance_map, path_output, max_dist=None, sampling=None,
         print bcolors.WARNING + "Values over maximal distance (" + str(max_dist) + ") found. Clipping them to " + str(max_dist) + "." + bcolors.ENDC
         distance_map = np.maximum(distance_map,0)
         
-    
+    print np.max(distance_map), np.min(distance_map), np.all(R==distance_map), '||', np.max(R), np.min(R)
+    if np.any(R!=distance_map):
+        pl.imshow(R-distance_map,interpolation='nearest')
+        pl.show()
+        
     if sampling != None:
         assert len(sampling) == len(shape)
         assert min(sampling) >= 1
@@ -465,7 +470,7 @@ def get_binaries_mat(max_dist, binaries, *args):
 
     
     
-def call_graph_cut(input_file, output_file, prog, verbose=False):
+def call_graph_cut(input_file, output_file, prog, old=False, verbose=False):
     '''
     Calls the C implementation to solve the graph-cut problem.
     
@@ -484,10 +489,16 @@ def call_graph_cut(input_file, output_file, prog, verbose=False):
     
     '''
     if verbose:
-        returned = call([prog, input_file, output_file])
+        if old:
+            returned = call([prog, input_file, output_file, 'old'])
+        else:
+            returned = call([prog, input_file, output_file])
     else:
         with open(os.devnull,'w') as FNULL:
-            returned = call([prog, input_file, output_file], stdout=FNULL, stderr=STDOUT)
+            if old:
+                returned = call([prog, input_file, output_file, 'old'], stdout=FNULL, stderr=STDOUT)
+            else:
+                returned = call([prog, input_file, output_file], stdout=FNULL, stderr=STDOUT)
     
     
 def get_graph_cut_output(output_file, shape):
@@ -529,13 +540,13 @@ def get_graph_cut_output(output_file, shape):
     
     
 def reconstruct_surface(image, path_graph, path_output, C_prog, max_dist=None, sampling=None, overwrite=False, clipping_dist=4, cost_fun=None, verbose=False, binaries=None):
-    
+    print "HERE"
     if binaries is None:
         shape = prepare_problem(image, path_graph, max_dist=max_dist, sampling=sampling, overwrite=overwrite, clipping_dist=clipping_dist, cost_fun=cost_fun)
     else:
-        shape = prepare_problem_VCE(image, path_graph, max_dist=max_dist, sampling=sampling, overwrite=overwrite, clipping_dist=clipping_dist, cost_fun=cost_fun, binaries=binaries)
+        shape = prepare_problem(image, path_graph, max_dist=max_dist, sampling=sampling, overwrite=overwrite, clipping_dist=clipping_dist, cost_fun=cost_fun, binaries=binaries)
     
-    call_graph_cut(path_graph, path_output, C_prog, verbose=verbose)
+    call_graph_cut(path_graph, path_output, C_prog, old=True, verbose=verbose)
     
     return get_graph_cut_output(path_output, shape)
     
@@ -544,7 +555,6 @@ def reconstruct_surface(image, path_graph, path_output, C_prog, max_dist=None, s
     
     
 def reconstruct_surface_VCE(image, path_graph, path_output, C_prog, max_dist=None, sampling=None, overwrite=False, clipping_dist=4, cost_fun=None, binaries=None, verbose=False):
-    
     shape = prepare_problem_VCE(image, path_graph, max_dist=max_dist, sampling=sampling, overwrite=overwrite, clipping_dist=clipping_dist, cost_fun=cost_fun, binaries=binaries)
     
     call_graph_cut(path_graph, path_output, C_prog, verbose=verbose)

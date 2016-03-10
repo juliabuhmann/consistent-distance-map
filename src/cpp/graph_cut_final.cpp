@@ -146,6 +146,7 @@ int graph_cut3D(std::string input, std::string output)
                     
     
     
+    //~ std::ofstream myfile2 ("/Users/abouchar/Desktop/dump/log_VE.txt");
     
     // BUILD GRAPH WITH NODES
     bool repeat = true;
@@ -160,8 +161,11 @@ int graph_cut3D(std::string input, std::string output)
 
         GraphType *g = new GraphType(/*estimated # of nodes*/ n_nodes, /*estimated # of edges*/ n_neighbors*n_nodes); 
         
-        for (int i=0; i<n_nodes; ++i)
+        for (int i=0; i<n_nodes; ++i){
             g -> add_node();
+            //~ myfile2 << std::to_string(i) << " " << std::endl;
+        }
+        //~ myfile2 << std::endl;
             
         
         
@@ -214,6 +218,7 @@ int graph_cut3D(std::string input, std::string output)
                                                 //printf ("%d -> %d\n", ind_src, ind_dest);
                                                 
                                                 g -> add_edge( ind_src, ind_dest,    /* capacities */  INF, 0 );
+                                                //~ myfile2 << std::to_string(ind_src) << " " << std::to_string(ind_dest) << " INF 0" << std::endl;
                                                 edge_count++;
                                             }
                                             else
@@ -229,6 +234,7 @@ int graph_cut3D(std::string input, std::string output)
                                                         //~ //printf ("%d, %d, %d, %d\n", x+px, y+py, z+pz, 0);
                                                         //~ printf ("%d, %d, %d\n", x+px, y+py, 0);
                                                         g -> add_edge( ind_src, ind_dest,    /* capacities */  INF, 0 );
+                                                        //~ myfile2 << std::to_string(ind_src) << " " << std::to_string(ind_dest) << " INF 0" << std::endl;
                                                         edge_count++;
                                                     }
                                                 }
@@ -244,11 +250,13 @@ int graph_cut3D(std::string input, std::string output)
                             //printf ("%f, 0: %d, %d, %d, %d  ->  source\n", -weights[x][y][z][w], x, y, z, w);
                             //~ printf ("%f, 0: %d, %d, %d  ->  source\n", -weights[x][y][z][w], x, y, w);
                             g -> add_tweights( ind_src,    /* capacities */   float(-weights[x][y][z][w]), float(0.));
+                            //~ myfile2 << std::to_string(ind_src) << " " << std::to_string(float(-weights[x][y][z][w])) << " " << std::to_string(float(0.)) << std::endl;
                             tedge_count++;}
                         else{
                             //printf ("0, %f: %d, %d, %d, %d  ->  sink\n", weights[x][y][z][w], x, y, z, w);
                             //~ printf ("0, %f: %d, %d, %d  ->  sink\n", weights[x][y][z][w], x, y, w);
                             g -> add_tweights( ind_src,    /* capacities */   float(0.), float(weights[x][y][z][w]));
+                            //~ myfile2 << std::to_string(ind_src) << " " << std::to_string(float(0.)) << " " << std::to_string(float(weights[x][y][z][w])) << std::endl;
                             tedge_count++;}
                     }
                 }
@@ -257,7 +265,7 @@ int graph_cut3D(std::string input, std::string output)
         
 
         
-        
+        //~ myfile2.close();
         
         
         if (!second_iteration)
@@ -280,6 +288,7 @@ int graph_cut3D(std::string input, std::string output)
         for (int i = 0; i < n_nodes; i++){
             if (g->what_segment(i) == GraphType::SOURCE){
                 flag = false;
+                break;
                 //std::cout << std::to_string(i) << "Quitting\n";
                 }
             }
@@ -584,6 +593,9 @@ int graph_cut3D_VCE(std::string input, std::string output)
     
     float offset = 0;
     
+    
+    //~ std::ofstream myfile2 ("/Users/abouchar/Desktop/dump/log_VCE.txt");
+    
     init = std::clock();
     while (repeat){
         inter1 = std::clock();
@@ -592,10 +604,11 @@ int graph_cut3D_VCE(std::string input, std::string output)
 
         GraphType *g = new GraphType(/*estimated # of nodes*/ n_nodes, /*estimated # of edges*/ n_neighbors*n_nodes); 
         
-        for (int i=0; i<n_nodes; ++i)
+        for (int i=0; i<n_nodes; ++i){
             g -> add_node();
-            
-        
+            //~ myfile2 << std::to_string(i) << " " << std::endl;
+        }
+        //~ myfile2 << std::endl;
         
         
         
@@ -651,6 +664,7 @@ int graph_cut3D_VCE(std::string input, std::string output)
                                                 //~ //printf ("%d -> %d\n", ind_src, ind_dest);
                                                 
                                                 g -> add_edge( ind_src, ind_dest,    /* capacities */  INF, 0 );
+                                                //~ myfile2 << std::to_string(ind_src) << " " << std::to_string(ind_dest) << " INF 0" << std::endl;
                                                 edge_count++;
                                                 
                                                 if (add_binaries && pw < 0 && (px || py || pz)){
@@ -669,7 +683,7 @@ int graph_cut3D_VCE(std::string input, std::string output)
                                                             binary = binaries_cost_mat[predicted_height][predicted_height2][w][w+h-2] - binaries_cost_mat[predicted_height][predicted_height2][w][w+h];
                                                         
                                                         }
-                                                        //~ printf ("bin:%f: %d, %d, %d  ->  %d, %d, %d\n\n", binary, x, y, w, (x+px), (y+py), (w+h));
+                                                        printf ("bin:%f: %d, %d, %d  ->  %d, %d, %d\n\n", binary, x, y, w, (x+px), (y+py), (w+h));
                                                         
                                         
                                                         g -> add_edge( ind_src, ind_dest,    /* capacities */  binary, 0 );
@@ -694,6 +708,7 @@ int graph_cut3D_VCE(std::string input, std::string output)
                                                         //printf ("%d, %d, %d, %d\n", x+px, y+py, z+pz, 0);
                                                         //~ printf ("%d, %d, %d\n", x+px, y+py, 0);
                                                         g -> add_edge( ind_src, ind_dest,    /* capacities */  INF, 0 );
+                                                        //~ myfile2 << std::to_string(ind_src) << " " << std::to_string(ind_dest) << " INF 0" << std::endl;
                                                         edge_count++;
                                                     }
                                                 }
@@ -721,18 +736,20 @@ int graph_cut3D_VCE(std::string input, std::string output)
                             //~ printf("\n");
                             //~ printf ("Pred: %d; %f, 0: %d, %d, %d  ->  source\n", predicted_height, -unary_cost, x, y, w);
                             g -> add_tweights( ind_src,    /* capacities */   float(-unary_cost), float(0.));
+                            //~ myfile2 << std::to_string(ind_src) << " " << std::to_string(float(-unary_cost)) << " " << std::to_string(float(0.)) << std::endl;
                             tedge_count++;}
                         else{
                             //printf ("0, %f: %d, %d, %d, %d  ->  sink\n", weights[x][y][z][w], x, y, z, w);
                             //~ printf ("Pred: %d; 0, %f: %d, %d, %d  ->  sink\n", predicted_height, unary_cost, x, y, w);
                             g -> add_tweights( ind_src,    /* capacities */   float(0.), float(unary_cost));
+                            //~ myfile2 << std::to_string(ind_src) << " " << std::to_string(float(0.)) << " " << std::to_string(float(unary_cost)) << std::endl;
                             tedge_count++;}
                     }
                 }
             }
         }
         
-        
+        //~ myfile2.close();
         
         // --------------------------------------------------------------------
         // Binary costs
@@ -780,6 +797,7 @@ int graph_cut3D_VCE(std::string input, std::string output)
         for (int i = 0; i < n_nodes; i++){
             if (g->what_segment(i) == GraphType::SOURCE){
                 flag = false;
+                break;
                 //std::cout << std::to_string(i) << "Quitting\n";
                 }
             }
@@ -1124,7 +1142,9 @@ int graph_cut2D(std::string input, std::string output)
             std::ofstream myfile (output);
             if (myfile.is_open())
               {
+                myfile << std::to_string(g->what_segment(0) == GraphType::SOURCE) ;
                 for(int i = 1; i < n_nodes; i++){
+                    myfile << " " << std::to_string(g->what_segment(i) == GraphType::SOURCE) ;
                 }
                 myfile.close();
               }
@@ -1146,7 +1166,7 @@ int main(int argc, char* argv[])
     // ------------------------------------------------------------------------
     // 0. Parse input
     // ------------------------------------------------------------------------
-    if (argc != 3) {
+    if (argc != 3 && argc != 4) {
         // Tell the user how to run the program
         std::cerr << "Usage: " << argv[0] << " <input_file> <output_file>" << std::endl;
         /* "Usage messages" are a conventional way of telling the user
@@ -1156,9 +1176,15 @@ int main(int argc, char* argv[])
     }
     
     std::string input, output;
+    bool old = false;
     input = argv[1];
     output = argv[2];
-        
+    if (argc > 3){
+        printf("YES\n");
+        old = true;
+    }
+    else
+        printf("Not old:%d\n",argc);
 
 
 
@@ -1203,15 +1229,31 @@ int main(int argc, char* argv[])
     
     infile.close();
     
-    switch (dims)
-    {
-        case 4:
-            return graph_cut3D_VCE(input, output);
-            break;
-        case 3:
-            return graph_cut3D_VCE(input, output);
-            break;
-        default:
-            return 1;
+    if (old){
+        switch (dims)
+        {
+            case 4:
+                return graph_cut3D(input, output);
+                break;
+            case 3:
+                return graph_cut3D(input, output);
+                break;
+            default:
+                return 1;
+        }
+    }
+    else{
+        printf("WARNING: Using beta-version of the code. Most likely not correct results.\n");
+        switch (dims)
+        {
+            case 4:
+                return graph_cut3D_VCE(input, output);
+                break;
+            case 3:
+                return graph_cut3D_VCE(input, output);
+                break;
+            default:
+                return 1;
+        }
     }
 }
