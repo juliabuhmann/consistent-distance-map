@@ -830,7 +830,7 @@ def test(image, path_graph, path_output, C_prog, max_dist=None):
 
 
 
-def solve_via_ILP(weights, max_gradient=1, enforce_minimum=False, num_cores=None):
+def solve_via_ILP(weights, max_gradient=1, enforce_minimum=False, num_cores=None, solve_relaxed_problem=False):
     try:
         if os.path.exists('/data/owncloud/MinCutForDistance/pysurfrec/build/python'):
             sys.path.append('/data/owncloud/MinCutForDistance/pysurfrec/build/python')
@@ -866,6 +866,9 @@ def solve_via_ILP(weights, max_gradient=1, enforce_minimum=False, num_cores=None
     p = surfrec.IlpSolverParameters()
     p.enforce_zero_minimum = enforce_minimum
     p.num_neighbors = 2*n_dims
+    p.solve_relaxed_problem = solve_relaxed_problem
+    
+    
     if not num_cores is None:
         p.num_threads = num_cores
         
