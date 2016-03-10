@@ -40,8 +40,6 @@ if __name__ == "__main__":
     PLOTTING = False
     
     
-    tmp_file1 = os.path.join(tmp_files,'tmp.txt')
-    tmp_file2 = os.path.join(tmp_files,'tmp_output.txt')
     
     prog = os.path.join(ROOT_PATH,os.pardir,os.pardir,'src','cpp','graph_cut')
     
@@ -73,24 +71,32 @@ if __name__ == "__main__":
             print "Using " + cost_function + " unaries.\n"
             np.random.seed(555)
             
+            
+            tmp_file1 = os.path.join(tmp_files,'tmp' + cost_function + '_' + str(cube_ind) +'.txt')
+            tmp_file2 = os.path.join(tmp_files,'tmp_output' + cost_function + '_' + str(cube_ind) + '.txt')
+            
             output = os.path.join(ROOT_DATA,'smoothed',cost_function,'cube0_' + str(cube_ind) + '.tif')
             output_flag = os.path.join(ROOT_DATA,'smoothed',cost_function,'cube0_' + str(cube_ind) + '_start.tif')
             
-            open(output_flag, 'a').close()
             
             if os.path.isfile(output) or os.path.isfile(output_flag):
+                print os.path.isfile(output), os.path.isfile(output_flag)
                 continue
+            
+            open(output_flag, 'w').close()
             
             if params == None:
                 t0 = time()
-                out = sr.reconstruct_surface_VCE(predicted_distances[cube], tmp_file1,tmp_file2,prog,overwrite=True, max_dist=max_dist, sampling = [1,1,2], cost_fun=cost_function, verbose=True)
+                out = sr.reconstruct_surface(predicted_distances[cube], tmp_file1,tmp_file2,prog,overwrite=True, max_dist=max_dist, sampling = [1,1,2], cost_fun=cost_function, verbose=True)
+                #~ weights = sr.compute_weights(predicted_distances[cube], max_dist=max_dist, cost_fun=cost_fun)
+                #~ out = sr.solve_via_ILP(predicted_distances[cube], max_gradient=[1,1,2])
                 t1 = time()
                 
                 
                 
             elif isinstance(params,int):
                 t0 = time()
-                out = sr.reconstruct_surface_VCE(predicted_distances[cube], tmp_file1,tmp_file2,prog,overwrite=True, max_dist=max_dist, sampling = [1,1,2], clipping_dist=params, cost_fun=cost_function[:-2], verbose=True)
+                out = sr.reconstruct_surface(predicted_distances[cube], tmp_file1,tmp_file2,prog,overwrite=True, max_dist=max_dist, sampling = [1,1,2], clipping_dist=params, cost_fun=cost_function[:-2], verbose=True)
                 t1 = time()
             elif isinstance(params,str):
                 
@@ -104,10 +110,12 @@ if __name__ == "__main__":
                 prior = np.exp(-(prior[0] / prior[0].sum(axis=1)[:,np.newaxis].astype(np.float) ))*1000
                 pl.close()
                 t0 = time()
-                out = sr.reconstruct_surface_VCE(predicted_distances[cube], tmp_file1,tmp_file2,prog,overwrite=True, max_dist=max_dist, sampling = [1,1,2], clipping_dist=params, cost_fun=prior, verbose=True)
+                out = sr.reconstruct_surface(predicted_distances[cube], tmp_file1,tmp_file2,prog,overwrite=True, max_dist=max_dist, sampling = [1,1,2], clipping_dist=params, cost_fun=prior, verbose=True)
                 t1 = time()
                         
             imsave(output,out.astype(np.int32),compress=1)
-            os.remove(output_flat)
+            os.remove(output_flag)
+            os.remove(tmp_file1)
+            os.remove(tmp_file2)
             times[cost_function].append(t1-t0)
      
